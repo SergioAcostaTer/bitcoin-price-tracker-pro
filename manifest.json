@@ -1,0 +1,19 @@
+{
+  "manifest_version": 3,
+  "name": "Bitcoin Price Extension",
+  "version": "1.0.1",
+  "description": "Stay up-to-date on the latest Bitcoin price with this easy-to-use Google Chrome extension.",
+  "icons": {
+    "16": "icon16.png",
+    "48": "icon48.png",
+    "128": "icon128.png"
+  },
+  "host_permissions": ["<all_urls>"],
+  "action": {
+    "default_popup": "index.html",
+    "default_icon": "icon.png"
+  },
+  "background": {
+    "service_worker": "background.js"
+  }
+}
