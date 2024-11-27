@@ -2903,8 +2903,8 @@
       const i = t.$proxies || (t.$proxies = {}),
         s = i[e];
       if (!s) return;
-      (({ attach: ss, detach: ss, resize: ss }[e] || Ki)(t, e, s),
-        (i[e] = void 0));
+      (({ attach: ss, detach: ss, resize: ss })[e] || Ki)(t, e, s),
+        (i[e] = void 0);
     }
     getDevicePixelRatio() {
       return window.devicePixelRatio;

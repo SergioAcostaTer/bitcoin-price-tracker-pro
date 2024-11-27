@@ -1,52 +1,82 @@
-const url = "https://api.coindesk.com/v1/bpi/currentprice.json";
+chrome.runtime.onInstalled.addListener(refreshStart);
+chrome.runtime.onSuspend.addListener(refreshStart);
+chrome.runtime.onSuspendCanceled.addListener(refreshStart);
+chrome.runtime.onUpdateAvailable.addListener(refreshStart);
+chrome.runtime.onStartup.addListener(refreshStart);
+chrome.runtime.onConnect.addListener(refreshStart);
+
+let cache = "0";
+let loading = false;
 
 async function refresh() {
-  const firstFetch = await fetch(url);
-  const data = await firstFetch.json();
-  const price = data.bpi.USD.rate_float;
-  const eurPrice = data.bpi.EUR.rate_float;
-  const onlyTwoDecimals = price.toFixed(2);
-  const onlyTwoDecimalsEur = eurPrice.toFixed(2);
-  const addThousandsSeparator = onlyTwoDecimals.replace(
-    /\B(?=(\d{3})+(?!\d))/g,
-    ","
-  );
-  const addThousandsSeparatorEur = onlyTwoDecimalsEur.replace(
-    /\B(?=(\d{3})+(?!\d))/g,
-    ","
-    );
-  const toText = addThousandsSeparator.toString();
-  const toTextEur = addThousandsSeparatorEur.toString();
-  const subtr = toText.substr(0, 4);
+  try {
+    setLoading(true);
+    const res = await fetch("https://api.binance.com/api/v3/ticker/24hr?symbols=%5B%22BTCUSDT%22,%22BTCEUR%22%5D");
+    const data = await res.json();
+    updateBadgeAndTitle(data);
+  } catch (error) {
+    console.error('Failed to fetch data:', error);
+  } finally {
+    setLoading(false);
+  }
+}
 
-  chrome.action.setBadgeText({ text: `${subtr}K` });
-  chrome.action.setBadgeBackgroundColor({ color: "#217908" });
+function updateBadgeAndTitle(data) {
+  const price = parseFloat(data[0].lastPrice);
+  const eurPrice = parseFloat(data[1].lastPrice);
+  const usdPriceFormatted = formatPrice(price);
+  const eurPriceFormatted = formatPrice(eurPrice);
+  
+  const subtr = usdPriceFormatted.substr(0, 4);
 
-  const secondFetch = await fetch(
-    "https://api.coingecko.com/api/v3/coins/bitcoin"
-  );
-  const data2 = await secondFetch.json();
-  const minToday = data2.market_data.low_24h.usd;
-  const minThousands = minToday
-    .toString()
-    .replace(/\B(?=(\d{3})+(?!\d))/g, ",");
-  const athToday = data2.market_data.high_24h.usd;
-  const athThousands = athToday
-    .toString()
-    .replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+  updateBadge(subtr);
+
+  cache = subtr;
+
+  const minToday = formatPrice(parseFloat(data[0].lowPrice));
+  const athToday = formatPrice(parseFloat(data[0].highPrice));
 
   chrome.action.setTitle({
-    title: `Bitcoin Pice \nUSD: ${toText}$ \nEUR: ${toTextEur}€\nHigh 24h: ${athThousands}$\nLow 24h: ${minThousands}$ \n\nLast updated: ${new Date().toLocaleTimeString()}`,
+    title: `Bitcoin Price \nUSD: ${usdPriceFormatted}$ \nEUR: ${eurPriceFormatted}€\nHigh 24h: ${athToday}$\nLow 24h: ${minToday}$ \n\nLast updated: ${new Date().toLocaleTimeString()}`,
   });
   console.log(
-    `Bitcoin Pice \nUSD: ${toText}$ \nEUR: ${toTextEur}€\nHigh 24h: ${athThousands}$\nLow 24h: ${minThousands}$ \n\nLast updated: ${new Date().toLocaleTimeString()}`,
+    `Bitcoin Price \nUSD: ${usdPriceFormatted}$ \nEUR: ${eurPriceFormatted}€\nHigh 24h: ${athToday}$\nLow 24h: ${minToday}$ \n\nLast updated: ${new Date().toLocaleTimeString()}`,
     `${subtr}K`,
-    toText
+    usdPriceFormatted
   );
+}
+
+function updateBadge(subtr) {
+  if (parseFloat(subtr.replace(",", ".")) >= parseFloat(cache.replace(",", "."))) {
+    chrome.action.setBadgeText({ text: `${subtr}K` });
+    chrome.action.setBadgeBackgroundColor({ color: "#217908" });
+  } else {
+    chrome.action.setBadgeText({ text: `${subtr}K` });
+    chrome.action.setBadgeBackgroundColor({ color: "#d32f2f" });
+    setTimeout(() => {
+      chrome.action.setBadgeBackgroundColor({ color: "#217908" });
+    }, 3000);
+  }
+}
+
+function formatPrice(price) {
+  return price.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+}
+
+function setLoading(isLoading) {
+  loading = isLoading;
+  if (loading) {
+    chrome.action.setBadgeText({ text: '...' });
+  }
+}
+
+function refreshStart() {
+  refresh();
+  setInterval(refresh, 5000);
 }
 
 refresh();
 
-//Every 5 seconds
-
-setInterval(refresh, 10000);
+setInterval(function () {
+  fetch("https://api.binance.com/api/v3/ping");
+}, 10000);
