@@ -13,25 +13,26 @@ let eurPrice = 0;
 const iconUrl = chrome.runtime.getURL('icon128.png');
 
 
-// Message handler for popup communication
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-  if (request.action === 'wakeUp') {
-    // Popup is opened, ensure we have fresh data
-    refresh();
-    sendResponse({ status: 'awake' });
-  } else if (request.action === 'createAlarmNotification') {
-    // Handle alarm notifications from popup
-    createAlarmNotifications(request.alarms, request.currentPrice);
-    sendResponse({ status: 'notifications_created' });
-  } else if (request.action === 'getPriceData') {
-    // Send current price data to popup
-    sendResponse({ 
-      currentPrice: currentPrice,
-      eurPrice: eurPrice
-    });
-  }
-  return true; // Keep message channel open for async response
+  (async () => {
+    try {
+      if (request.action === 'createAlarmNotification') {
+        await createAlarmNotifications(request.alarms, request.currentPrice);
+        sendResponse({ status: 'notifications_created' });
+      } else if (request.action === 'wakeUp') {
+        await refresh();
+        sendResponse({ status: 'awake' });
+      } else if (request.action === 'getPriceData') {
+        sendResponse({ currentPrice, eurPrice });
+      }
+    } catch (err) {
+      console.error('onMessage error:', err);
+      sendResponse({ error: String(err) });
+    }
+  })();
+  return true;
 });
+
 
 async function refresh() {
   try {
@@ -96,25 +97,25 @@ async function checkStoredAlarms() {
   }
 }
 
-// Create notifications for triggered alarms
 async function createAlarmNotifications(triggeredAlarms, price) {
   for (const alarm of triggeredAlarms) {
     const notificationId = `alarm_${alarm.id}_${Date.now()}`;
-    
-    await chrome.notifications.create(notificationId, {
-      type: 'basic',
-      iconUrl: iconUrl,
-      title: 'Bitcoin Price Alert!',
-      message: `Bitcoin price is now ${alarm.type} $${alarm.price.toLocaleString()}!\nCurrent price: $${price.toLocaleString()}`,
-      priority: 2,
-      requireInteraction: true
-    });
-    
-    setTimeout(() => {
-      chrome.notifications.clear(notificationId);
-    }, 30000);
+    try {
+      await chrome.notifications.create(notificationId, {
+        type: 'basic',
+        iconUrl: iconUrl,
+        title: 'Bitcoin Price Alert!',
+        message: `Bitcoin price is now ${alarm.type} $${alarm.price.toLocaleString()}!\nCurrent price: $${price.toLocaleString()}`,
+        priority: 2,
+        requireInteraction: true
+      });
+      setTimeout(() => chrome.notifications.clear(notificationId), 30000);
+    } catch (e) {
+      console.error('notifications.create failed:', e);
+    }
   }
 }
+
 
 // Handle notification clicks
 chrome.notifications.onClicked.addListener((notificationId) => {
