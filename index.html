@@ -8,6 +8,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <script src="chart.js"></script>
+    <script src="popup.js" defer></script>
     <style>
         * {
             margin: 0;
@@ -15,14 +16,19 @@
             box-sizing: border-box;
         }
 
-        body {
-            width: 400px;
-            height: 600px;
+        html, body {
+            width: 350px;
+            height: 450px;
+            min-width: 350px;
+            min-height: 450px;
+            max-width: 350px;
+            max-height: 450px;
             font-family: 'Inter', sans-serif;
             background: var(--bg-primary);
             color: var(--text-primary);
             transition: all 0.3s ease;
-            overflow-x: hidden;
+            overflow: hidden;
+            position: relative;
         }
 
         :root {
@@ -55,14 +61,14 @@
         .header {
             background: var(--bg-secondary);
             border-bottom: 1px solid var(--border-color);
-            padding: 16px 20px;
+            padding: 12px 16px;
             display: flex;
             align-items: center;
             justify-content: space-between;
         }
 
         .header-title {
-            font-size: 18px;
+            font-size: 16px;
             font-weight: 600;
             color: var(--text-primary);
             display: flex;
@@ -71,31 +77,31 @@
         }
 
         .bitcoin-icon {
-            width: 24px;
-            height: 24px;
+            width: 20px;
+            height: 20px;
             background: var(--accent-yellow);
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 14px;
+            font-size: 12px;
             font-weight: 700;
             color: #000;
         }
 
         .header-controls {
             display: flex;
-            gap: 12px;
+            gap: 8px;
             align-items: center;
         }
 
         /* Toggle Switches */
         .toggle-switch {
             position: relative;
-            width: 40px;
-            height: 20px;
+            width: 36px;
+            height: 18px;
             background: var(--bg-tertiary);
-            border-radius: 10px;
+            border-radius: 9px;
             cursor: pointer;
             transition: all 0.3s ease;
             border: 1px solid var(--border-color);
@@ -109,8 +115,8 @@
             position: absolute;
             top: 1px;
             left: 1px;
-            width: 16px;
-            height: 16px;
+            width: 14px;
+            height: 14px;
             background: var(--text-primary);
             border-radius: 50%;
             transition: all 0.3s ease;
@@ -118,7 +124,7 @@
         }
 
         .toggle-switch.active .toggle-knob {
-            transform: translateX(18px);
+            transform: translateX(16px);
             background: #000;
         }
 
@@ -126,13 +132,13 @@
             background: var(--accent-green);
             color: white;
             border: none;
-            padding: 6px 12px;
-            border-radius: 8px;
-            font-size: 12px;
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-size: 11px;
             font-weight: 500;
             cursor: pointer;
             transition: all 0.3s ease;
-            min-width: 40px;
+            min-width: 36px;
         }
 
         .currency-toggle.eur {
@@ -142,9 +148,9 @@
         /* Price Section */
         .price-section {
             background: var(--bg-secondary);
-            padding: 20px;
-            margin: 16px 20px;
-            border-radius: 12px;
+            padding: 16px;
+            margin: 12px 16px;
+            border-radius: 10px;
             border: 1px solid var(--border-color);
             box-shadow: 0 2px 8px var(--shadow);
         }
@@ -153,26 +159,26 @@
             display: flex;
             align-items: center;
             justify-content: space-between;
-            margin-bottom: 16px;
+            margin-bottom: 12px;
         }
 
         .price-value {
-            font-size: 28px;
+            font-size: 24px;
             font-weight: 700;
             color: var(--text-primary);
             display: flex;
             align-items: center;
-            gap: 8px;
+            gap: 6px;
         }
 
         .price-change {
-            font-size: 14px;
+            font-size: 12px;
             font-weight: 500;
-            padding: 4px 8px;
-            border-radius: 6px;
+            padding: 3px 6px;
+            border-radius: 4px;
             display: flex;
             align-items: center;
-            gap: 4px;
+            gap: 3px;
         }
 
         .price-change.positive {
@@ -194,18 +200,18 @@
         .price-stat {
             display: flex;
             flex-direction: column;
-            gap: 4px;
+            gap: 3px;
         }
 
         .price-stat-label {
-            font-size: 12px;
+            font-size: 10px;
             color: var(--text-secondary);
             text-transform: uppercase;
             font-weight: 500;
         }
 
         .price-stat-value {
-            font-size: 14px;
+            font-size: 12px;
             font-weight: 600;
             color: var(--text-primary);
         }
@@ -213,9 +219,9 @@
         /* Portfolio Section */
         .portfolio-section {
             background: var(--bg-secondary);
-            padding: 20px;
-            margin: 0 20px 16px 20px;
-            border-radius: 12px;
+            padding: 12px 16px;
+            margin: 0 16px 12px 16px;
+            border-radius: 10px;
             border: 1px solid var(--border-color);
             box-shadow: 0 2px 8px var(--shadow);
         }
@@ -224,11 +230,11 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 16px;
+            margin-bottom: 8px;
         }
 
         .portfolio-title {
-            font-size: 16px;
+            font-size: 14px;
             font-weight: 600;
             color: var(--text-primary);
         }
@@ -237,9 +243,9 @@
             background: var(--accent-yellow);
             color: #000;
             border: none;
-            padding: 6px 12px;
-            border-radius: 6px;
-            font-size: 12px;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 10px;
             font-weight: 500;
             cursor: pointer;
             transition: all 0.3s ease;
@@ -252,34 +258,33 @@
         .portfolio-amount {
             display: flex;
             align-items: center;
-            gap: 12px;
-            margin-bottom: 8px;
+            gap: 8px;
         }
 
         .portfolio-btc {
-            font-size: 20px;
+            font-size: 16px;
             font-weight: 700;
             color: var(--text-primary);
         }
 
         .portfolio-usd {
-            font-size: 16px;
+            font-size: 12px;
             color: var(--text-secondary);
             font-weight: 500;
         }
 
         /* Chart Section */
         .chart-section {
-            margin: 0 20px 16px 20px;
+            margin: 0 16px 12px 16px;
             background: var(--bg-secondary);
-            border-radius: 12px;
+            border-radius: 10px;
             border: 1px solid var(--border-color);
             overflow: hidden;
             box-shadow: 0 2px 8px var(--shadow);
         }
 
         .chart-header {
-            padding: 16px 20px;
+            padding: 12px 16px;
             border-bottom: 1px solid var(--border-color);
             display: flex;
             justify-content: space-between;
@@ -287,41 +292,48 @@
         }
 
         .chart-title {
-            font-size: 14px;
+            font-size: 12px;
             font-weight: 600;
             color: var(--text-primary);
         }
 
         .chart-period {
-            font-size: 12px;
+            font-size: 10px;
             color: var(--text-secondary);
         }
 
+        .chart-container {
+            padding: 8px;
+            height: 140px;
+            position: relative;
+        }
+
         canvas {
-            width: 100%;
-            height: 200px;
+            width: 100% !important;
+            height: 100% !important;
             background: var(--bg-secondary);
         }
 
         /* Alarms Section */
         .alarms-section {
             background: var(--bg-secondary);
-            padding: 20px;
-            margin: 0 20px 20px 20px;
-            border-radius: 12px;
+            padding: 12px 16px;
+            margin: 0 16px 16px 16px;
+            border-radius: 10px;
             border: 1px solid var(--border-color);
             box-shadow: 0 2px 8px var(--shadow);
+            display: none;
         }
 
         .alarms-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 16px;
+            margin-bottom: 8px;
         }
 
         .alarms-title {
-            font-size: 16px;
+            font-size: 14px;
             font-weight: 600;
             color: var(--text-primary);
         }
@@ -330,9 +342,9 @@
             background: var(--accent-green);
             color: white;
             border: none;
-            padding: 8px 12px;
-            border-radius: 6px;
-            font-size: 12px;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 10px;
             font-weight: 500;
             cursor: pointer;
             transition: all 0.3s ease;
@@ -342,7 +354,7 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 12px 0;
+            padding: 8px 0;
             border-bottom: 1px solid var(--border-color);
         }
 
@@ -351,13 +363,13 @@
         }
 
         .alarm-price {
-            font-size: 16px;
+            font-size: 14px;
             font-weight: 600;
             color: var(--text-primary);
         }
 
         .alarm-type {
-            font-size: 12px;
+            font-size: 10px;
             color: var(--text-secondary);
             text-transform: uppercase;
         }
@@ -366,9 +378,9 @@
             background: var(--accent-red);
             color: white;
             border: none;
-            padding: 4px 8px;
-            border-radius: 4px;
-            font-size: 10px;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-size: 9px;
             cursor: pointer;
         }
 
@@ -389,29 +401,29 @@
 
         .modal {
             background: var(--bg-secondary);
-            border-radius: 12px;
-            padding: 24px;
-            width: 320px;
+            border-radius: 10px;
+            padding: 20px;
+            width: 280px;
             border: 1px solid var(--border-color);
             box-shadow: 0 8px 24px var(--shadow);
         }
 
         .modal-title {
-            font-size: 18px;
+            font-size: 16px;
             font-weight: 600;
             color: var(--text-primary);
             margin-bottom: 16px;
         }
 
         .form-group {
-            margin-bottom: 16px;
+            margin-bottom: 12px;
         }
 
         .form-label {
             display: block;
-            font-size: 14px;
+            font-size: 12px;
             color: var(--text-secondary);
-            margin-bottom: 8px;
+            margin-bottom: 6px;
             font-weight: 500;
         }
 
@@ -419,9 +431,9 @@
             width: 100%;
             background: var(--bg-primary);
             border: 1px solid var(--border-color);
-            border-radius: 8px;
-            padding: 12px;
-            font-size: 14px;
+            border-radius: 6px;
+            padding: 10px;
+            font-size: 12px;
             color: var(--text-primary);
             transition: all 0.3s ease;
         }
@@ -435,23 +447,23 @@
             width: 100%;
             background: var(--bg-primary);
             border: 1px solid var(--border-color);
-            border-radius: 8px;
-            padding: 12px;
-            font-size: 14px;
+            border-radius: 6px;
+            padding: 10px;
+            font-size: 12px;
             color: var(--text-primary);
             cursor: pointer;
         }
 
         .modal-actions {
             display: flex;
-            gap: 12px;
+            gap: 8px;
             justify-content: flex-end;
         }
 
         .btn {
-            padding: 10px 16px;
-            border-radius: 8px;
-            font-size: 14px;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 12px;
             font-weight: 500;
             cursor: pointer;
             border: none;
@@ -475,11 +487,11 @@
 
         .close-btn {
             position: absolute;
-            top: 12px;
-            right: 12px;
+            top: 8px;
+            right: 8px;
             background: none;
             border: none;
-            font-size: 18px;
+            font-size: 16px;
             color: var(--text-secondary);
             cursor: pointer;
         }
@@ -498,13 +510,6 @@
             0% { opacity: 1; }
             50% { opacity: 0.5; }
             100% { opacity: 1; }
-        }
-
-        /* Responsive adjustments */
-        @media (max-width: 400px) {
-            body {
-                width: 100%;
-            }
         }
     </style>
 </head>
@@ -565,7 +570,9 @@
             <div class="chart-title">24H Price Chart</div>
             <div class="chart-period">Hourly</div>
         </div>
-        <canvas id="bitcoin-chart"></canvas>
+        <div class="chart-container">
+            <canvas id="bitcoin-chart"></canvas>
+        </div>
     </div>
 
     <!-- Alarms Section -->
@@ -575,7 +582,7 @@
             <button class="add-alarm-btn" id="add-alarm">+ Add</button>
         </div>
         <div id="alarms-list">
-            <div class="alarm-item" style="color: var(--text-muted); font-size: 14px; text-align: center; padding: 20px 0;">
+            <div class="alarm-item" style="color: var(--text-muted); font-size: 12px; text-align: center; padding: 16px 0;">
                 No price alerts set
             </div>
         </div>
@@ -620,7 +627,287 @@
         </div>
     </div>
 
-    <script src="popup.js"></script>
+    <script>
+        // App State
+        let currentCurrency = 'USD';
+        let currentTheme = 'dark';
+        let portfolioAmount = 0.1;
+        let alarms = [];
+        let chart = null;
+        let currentPrice = 0;
+
+        // Initialize the app
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeApp();
+        });
+
+        async function initializeApp() {
+            setupEventListeners();
+            await loadPriceData();
+            updatePortfolioDisplay();
+            renderChart();
+        }
+
+        function setupEventListeners() {
+            // Currency toggle
+            document.getElementById('currency-toggle').addEventListener('click', toggleCurrency);
+            
+            // Theme toggle
+            document.getElementById('theme-toggle').addEventListener('click', toggleTheme);
+            
+            // Portfolio modal
+            document.getElementById('edit-portfolio').addEventListener('click', openPortfolioModal);
+            document.getElementById('close-portfolio').addEventListener('click', closePortfolioModal);
+            document.getElementById('cancel-portfolio').addEventListener('click', closePortfolioModal);
+            document.getElementById('save-portfolio').addEventListener('click', savePortfolio);
+            
+            // Alarm modal
+            document.getElementById('add-alarm').addEventListener('click', openAlarmModal);
+            document.getElementById('close-alarm').addEventListener('click', closeAlarmModal);
+            document.getElementById('cancel-alarm').addEventListener('click', closeAlarmModal);
+            document.getElementById('save-alarm').addEventListener('click', saveAlarm);
+
+            // Click outside modal to close
+            document.getElementById('portfolio-modal').addEventListener('click', function(e) {
+                if (e.target === this) closePortfolioModal();
+            });
+            document.getElementById('alarm-modal').addEventListener('click', function(e) {
+                if (e.target === this) closeAlarmModal();
+            });
+        }
+
+        async function loadPriceData() {
+            try {
+                // Simulate API call with mock data
+                const mockData = {
+                    current_price: 43250.75,
+                    price_change_percentage_24h: 2.45,
+                    high_24h: 44100.00,
+                    low_24h: 42100.50,
+                    price_history: generateMockPriceData()
+                };
+
+                currentPrice = mockData.current_price;
+                updatePriceDisplay(mockData);
+            } catch (error) {
+                console.error('Failed to load price data:', error);
+            }
+        }
+
+        function generateMockPriceData() {
+            const data = [];
+            let basePrice = 43250;
+            
+            for (let i = 0; i < 24; i++) {
+                const variation = (Math.random() - 0.5) * 1000;
+                basePrice += variation;
+                data.push({
+                    time: new Date(Date.now() - (23 - i) * 60 * 60 * 1000),
+                    price: basePrice
+                });
+            }
+            
+            return data;
+        }
+
+        function updatePriceDisplay(data) {
+            const priceValue = document.getElementById('price-value');
+            const priceChange = document.getElementById('price-change');
+            const priceHigh = document.getElementById('price-high');
+            const priceLow = document.getElementById('price-low');
+
+            const currencySymbol = currentCurrency === 'USD' ? '$' : '€';
+            const price = currentCurrency === 'USD' ? data.current_price : data.current_price * 0.92;
+
+            priceValue.textContent = `${currencySymbol}${price.toLocaleString(undefined, { minimumFractionDigits: 2 })}`;
+            
+            const isPositive = data.price_change_percentage_24h >= 0;
+            priceChange.className = `price-change ${isPositive ? 'positive' : 'negative'}`;
+            priceChange.innerHTML = `
+                <span>${isPositive ? '↗' : '↘'}</span>
+                <span>${isPositive ? '+' : ''}${data.price_change_percentage_24h.toFixed(2)}%</span>
+            `;
+
+            const high = currentCurrency === 'USD' ? data.high_24h : data.high_24h * 0.92;
+            const low = currentCurrency === 'USD' ? data.low_24h : data.low_24h * 0.92;
+
+            priceHigh.textContent = `${currencySymbol}${high.toLocaleString(undefined, { minimumFractionDigits: 2 })}`;
+            priceLow.textContent = `${currencySymbol}${low.toLocaleString(undefined, { minimumFractionDigits: 2 })}`;
+
+            updatePortfolioDisplay();
+        }
+
+        function renderChart() {
+            const ctx = document.getElementById('bitcoin-chart').getContext('2d');
+            
+            if (chart) {
+                chart.destroy();
+            }
+
+            const mockData = generateMockPriceData();
+            
+            chart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: mockData.map(d => d.time.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})),
+                    datasets: [{
+                        label: 'Bitcoin Price',
+                        data: mockData.map(d => d.price),
+                        borderColor: '#F0B90B',
+                        backgroundColor: 'rgba(240, 185, 11, 0.1)',
+                        borderWidth: 2,
+                        fill: true,
+                        tension: 0.4,
+                        pointRadius: 0,
+                        pointHoverRadius: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        x: {
+                            display: false,
+                            grid: {
+                                display: false
+                            }
+                        },
+                        y: {
+                            display: false,
+                            grid: {
+                                display: false
+                            }
+                        }
+                    },
+                    elements: {
+                        point: {
+                            hoverBackgroundColor: '#F0B90B'
+                        }
+                    }
+                }
+            });
+        }
+
+        function toggleCurrency() {
+            currentCurrency = currentCurrency === 'USD' ? 'EUR' : 'USD';
+            const button = document.getElementById('currency-toggle');
+            button.textContent = currentCurrency;
+            button.className = `currency-toggle ${currentCurrency.toLowerCase()}`;
+            loadPriceData();
+        }
+
+        function toggleTheme() {
+            currentTheme = currentTheme === 'dark' ? 'light' : 'dark';
+            const body = document.getElementById('body');
+            const toggle = document.getElementById('theme-toggle');
+            
+            if (currentTheme === 'light') {
+                body.setAttribute('data-theme', 'light');
+                toggle.classList.add('active');
+            } else {
+                body.removeAttribute('data-theme');
+                toggle.classList.remove('active');
+            }
+        }
+
+        function updatePortfolioDisplay() {
+            const portfolioBtc = document.getElementById('portfolio-btc');
+            const portfolioUsd = document.getElementById('portfolio-usd');
+            
+            portfolioBtc.textContent = `${portfolioAmount.toFixed(3)} BTC`;
+            
+            const currencySymbol = currentCurrency === 'USD' ? '$' : '€';
+            const price = currentCurrency === 'USD' ? currentPrice : currentPrice * 0.92;
+            const value = portfolioAmount * price;
+            
+            portfolioUsd.textContent = `≈ ${currencySymbol}${value.toLocaleString(undefined, { minimumFractionDigits: 2 })}`;
+        }
+
+        function openPortfolioModal() {
+            document.getElementById('portfolio-input').value = portfolioAmount;
+            document.getElementById('portfolio-modal').style.display = 'flex';
+        }
+
+        function closePortfolioModal() {
+            document.getElementById('portfolio-modal').style.display = 'none';
+        }
+
+        function savePortfolio() {
+            const input = document.getElementById('portfolio-input');
+            const value = parseFloat(input.value);
+            
+            if (value >= 0) {
+                portfolioAmount = value;
+                updatePortfolioDisplay();
+                closePortfolioModal();
+            }
+        }
+
+        function openAlarmModal() {
+            document.getElementById('alarm-price').value = '';
+            document.getElementById('alarm-type').value = 'above';
+            document.getElementById('alarm-modal').style.display = 'flex';
+        }
+
+        function closeAlarmModal() {
+            document.getElementById('alarm-modal').style.display = 'none';
+        }
+
+        function saveAlarm() {
+            const priceInput = document.getElementById('alarm-price');
+            const typeSelect = document.getElementById('alarm-type');
+            
+            const price = parseFloat(priceInput.value);
+            const type = typeSelect.value;
+            
+            if (price > 0) {
+                const alarm = {
+                    id: Date.now(),
+                    price: price,
+                    type: type
+                };
+                
+                alarms.push(alarm);
+                renderAlarms();
+                closeAlarmModal();
+            }
+        }
+
+        function deleteAlarm(id) {
+            alarms = alarms.filter(alarm => alarm.id !== id);
+            renderAlarms();
+        }
+
+        function renderAlarms() {
+            const alarmsList = document.getElementById('alarms-list');
+            
+            if (alarms.length === 0) {
+                alarmsList.innerHTML = `
+                    <div class="alarm-item" style="color: var(--text-muted); font-size: 12px; text-align: center; padding: 16px 0;">
+                        No price alerts set
+                    </div>
+                `;
+            } else {
+                alarmsList.innerHTML = alarms.map(alarm => `
+                    <div class="alarm-item">
+                        <div>
+                            <div class="alarm-price">${currentCurrency === 'USD' ? '$' : '€'}${alarm.price.toLocaleString()}</div>
+                            <div class="alarm-type">When ${alarm.type}</div>
+                        </div>
+                        <button class="alarm-delete" onclick="deleteAlarm(${alarm.id})">×</button>
+                    </div>
+                `).join('');
+            }
+        }
+
+        // Auto refresh data every 30 seconds
+        setInterval(loadPriceData, 30000);
+    </script>
 </body>
 
 </html>
