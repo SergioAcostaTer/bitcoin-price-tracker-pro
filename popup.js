@@ -1,557 +1,478 @@
-// Retrieve Bitcoin price data from API
-const priceDiv = document.getElementById("price");
-const eurPriceDiv = document.getElementById("eur-price");
-const url =
-  "https://api.binance.com/api/v3/ticker/price?symbols=%5B%22BTCUSDT%22,%22BTCEUR%22%5D";
-let actualColor = localStorage.getItem("actualColor") || false;
-let actualCurrency = localStorage.getItem("actualCurrency") || false;
-
-function refreshData() {
-  chrome.runtime.sendMessage({ message: "wakeUp" });
-  fetch(url)
-    .then((response) => response.json())
-    .then((data) => {
-      const price = parseFloat(data[0].price);
-      const eurPrice = parseFloat(data[1].price);
-      console.log(price, eurPrice);
-      const onlyTwoDecimals = price.toFixed(2);
-      const onlyTwoDecimalsEur = eurPrice.toFixed(2);
-      const addThousandsSeparator = onlyTwoDecimals.replace(
-        /\B(?=(\d{3})+(?!\d))/g,
-        ","
-      );
-      priceDiv.innerHTML = `${addThousandsSeparator} $`;
-      eurPriceDiv.innerHTML = `${onlyTwoDecimalsEur}`;
-
-      const floatBitcoinAmount = parseFloat(
-        bitcoinAmount.innerHTML.replace(",", ".")
-      );
-
-      if (!actualCurrency) {
-        dolarAmount.innerHTML = `≈ ${spaceEveryThreeDigits(
-          (price * floatBitcoinAmount).toFixed(2)
-        )} $`;
-      } else {
-        dolarAmount.innerHTML = `≈ ${spaceEveryThreeDigits(
-          (eurPrice * floatBitcoinAmount).toFixed(2)
-        )} €`;
-      }
-    });
-}
-
-//space every 3 digits by left
-const spaceEveryThreeDigits = (x) => {
-  return x.toString().replace(/\B(?=(\d{3})+(?!\d))/g, " ");
+// State management
+let state = {
+    currentPrice: 0,
+    eurPrice: 0,
+    theme: localStorage.getItem('theme') || 'dark',
+    currency: localStorage.getItem('currency') || 'usd',
+    portfolioAmount: parseFloat(localStorage.getItem('portfolioAmount')) || 0.1,
+    alarms: JSON.parse(localStorage.getItem('alarms')) || [],
+    priceData: {
+        high24h: 0,
+        low24h: 0,
+        change24h: 0,
+        changePercent24h: 0
+    }
 };
 
-const brightColorPalette = ["#FFFFFF", "#000000"];
-
-const darkColorPalette = ["#071530", "#FFFFFF"];
-
-const h1 = document.getElementById("h1");
-const body = document.getElementById("body");
-const canvas = document.getElementById("bitcoin-chart");
-const colorButton = document.getElementById("color");
-const colorButton2 = document.getElementById("button");
-// const changeButton = document.getElementById("change-button");
-const bitcoinAmount = document.getElementById("btcq");
-const dolarAmount = document.getElementById("usdq");
-const amountScreen = document.getElementById("amount-screen");
-const amountPanel = document.getElementById("amount-panel");
-const amountButton = document.getElementById("amount-button");
-const amountInput = document.getElementById("amount-input");
-const modify = document.getElementById("modify");
-const money = document.getElementById("money");
-const dollar = document.getElementById("dollar");
-const euro = document.getElementById("euro");
-const cross = document.getElementById("cross");
-const twoElements = document.querySelectorAll(".changepls");
-
-// let actualColor = false;
-
-//retrieve actual color from chrome storage or set default
-// let actualColor = chrome.storage.sync.get("actualColor") || false;
-
-function saveActualColor() {
-  // chrome.storage.sync.set({ actualColor: actualColor });
-  localStorage.setItem("actualColor", actualColor);
-}
-
-document.addEventListener("DOMContentLoaded", function () {
-  // money
-  twoElements.forEach((element) => {
-    element.addEventListener("click", function () {
-      actualCurrency = !actualCurrency;
-      localStorage.setItem("actualCurrency", actualCurrency);
-      if (actualCurrency) {
-        dollar.style.display = "none";
-        euro.style.display = "block";
-        money.style.backgroundColor = "#1e53e6";
-      } else {
-        dollar.style.display = "block";
-        euro.style.display = "none";
-        money.style.backgroundColor = "#23be3d";
-      }
-
-      const globalAmount = parseFloat(localStorage.getItem("bitcoinAmount"));
-
-      const price = parseFloat(
-        priceDiv.innerHTML.replace(" $", "").replace(",", "")
-      );
-
-      const eurPrice = parseFloat(eurPriceDiv.innerHTML.replace(",", ""));
-
-      console.log(eurPrice);
-
-      if (actualCurrency) {
-        dolarAmount.innerHTML = `≈ ${spaceEveryThreeDigits(
-          (globalAmount * eurPrice).toFixed(2)
-        )} €`;
-      } else {
-        dolarAmount.innerHTML = `≈ ${spaceEveryThreeDigits(
-          (globalAmount * price).toFixed(2)
-        )} $`;
-      }
-    });
-  });
-
-  if (localStorage.getItem("actualCurrency") === "true") {
-    if (actualCurrency) {
-      dollar.style.display = "none";
-      euro.style.display = "block";
-      money.style.backgroundColor = "#1e53e6";
-    } else {
-      dollar.style.display = "block";
-      euro.style.display = "none";
-      money.style.backgroundColor = "#23be3d";
-    }
-  } else {
-    actualCurrency = false;
-  }
-
-  if (localStorage.getItem("bitcoinAmount")) {
-    bitcoinAmount.innerHTML = parseFloat(
-      localStorage.getItem("bitcoinAmount")
-    ).toFixed(3);
-  }
-
-  modify.addEventListener("click", function () {
-    amountScreen.style.display = "flex";
-    amountPanel.style.display = "flex";
-
-    amountInput.focus();
-  });
-
-  cross.addEventListener("click", function () {
-    amountScreen.style.display = "none";
-    amountPanel.style.display = "none";
-  });
-
-  amountInput.addEventListener("keypress", function (event) {
-    if (event.key === "Enter") {
-      amountButton.click();
-    }
-  });
-
-  amountButton.addEventListener("click", function () {
+// DOM elements
+const elements = {
+    body: document.getElementById('body'),
+    priceValue: document.getElementById('price-value'),
+    priceChange: document.getElementById('price-change'),
+    priceHigh: document.getElementById('price-high'),
+    priceLow: document.getElementById('price-low'),
+    portfolioBtc: document.getElementById('portfolio-btc'),
+    portfolioUsd: document.getElementById('portfolio-usd'),
+    themeToggle: document.getElementById('theme-toggle'),
+    currencyToggle: document.getElementById('currency-toggle'),
+    editPortfolio: document.getElementById('edit-portfolio'),
+    addAlarm: document.getElementById('add-alarm'),
+    alarmsListContainer: document.getElementById('alarms-list'),
     
-    amountScreen.style.display = "none";
-    amountPanel.style.display = "none";
+    // Modals
+    portfolioModal: document.getElementById('portfolio-modal'),
+    portfolioInput: document.getElementById('portfolio-input'),
+    closePortfolio: document.getElementById('close-portfolio'),
+    cancelPortfolio: document.getElementById('cancel-portfolio'),
+    savePortfolio: document.getElementById('save-portfolio'),
+    
+    alarmModal: document.getElementById('alarm-modal'),
+    alarmPrice: document.getElementById('alarm-price'),
+    alarmType: document.getElementById('alarm-type'),
+    closeAlarm: document.getElementById('close-alarm'),
+    cancelAlarm: document.getElementById('cancel-alarm'),
+    saveAlarm: document.getElementById('save-alarm'),
+    
+    chart: document.getElementById('bitcoin-chart')
+};
 
-    const amount = amountInput.value;
+// API endpoints
+const API = {
+    PRICE: 'https://api.binance.com/api/v3/ticker/24hr?symbols=%5B%22BTCUSDT%22,%22BTCEUR%22%5D',
+    CHART: 'https://api.binance.com/api/v3/klines?symbol=BTCUSDT&interval=1h&limit=24'
+};
 
-    const fixedAmount = parseFloat(amount).toFixed(3);
+// Utility functions
+const formatPrice = (price) => {
+    return new Intl.NumberFormat('en-US', {
+        style: 'currency',
+        currency: state.currency.toUpperCase(),
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+    }).format(price);
+};
 
-    const price = parseFloat(
-      priceDiv.innerHTML.replace(" $", "").replace(",", "")
-    );
-    const eurPrice = parseFloat(eurPriceDiv.innerHTML.replace(",", ""));
+const formatNumber = (num) => {
+    return new Intl.NumberFormat('en-US').format(num);
+};
 
-    if (!isNaN(amount) && amount !== "") {
-      bitcoinAmount.innerHTML = fixedAmount;
+const saveState = () => {
+    localStorage.setItem('theme', state.theme);
+    localStorage.setItem('currency', state.currency);
+    localStorage.setItem('portfolioAmount', state.portfolioAmount);
+    localStorage.setItem('alarms', JSON.stringify(state.alarms));
+};
 
-      if (actualCurrency) {
-        dolarAmount.innerHTML = `≈ ${spaceEveryThreeDigits(
-          (amount * eurPrice).toFixed(2)
-        )} €`;
-      } else {
-        dolarAmount.innerHTML = `≈ ${spaceEveryThreeDigits(
-          (amount * price).toFixed(2)
-        )} $`;
-      }
-
-      localStorage.setItem("bitcoinAmount", parseFloat(amount));
-    }
-    if (!isNaN(amount.replace(",", ".")) && amount !== "") {
-      bitcoinAmount.innerHTML = parseFloat(amount.replace(",", ".")).toFixed(3);
-
-      if (actualCurrency) {
-        dolarAmount.innerHTML = `≈ ${spaceEveryThreeDigits(
-          (amount.replace(",", ".") * eurPrice).toFixed(2)
-        )} €`;
-      } else {
-        dolarAmount.innerHTML = `≈ ${spaceEveryThreeDigits(
-          (amount.replace(",", ".") * price).toFixed(2)
-        )} $`;
-      }
-
-      localStorage.setItem(
-        "bitcoinAmount",
-        parseFloat(amount.replace(",", "."))
-      );
-    }
-    amountInput.value = "";
-
-    //localStorage
-  });
-
-  //color behavior
-  const h1 = document.getElementById("h1");
-  const body = document.getElementById("body");
-  const canvas = document.getElementById("bitcoin-chart");
-
-  function changeBackground(colors) {
-    body.style.backgroundColor = [colors[0]];
-    h1.style.backgroundColor = [colors[0]];
-    h1.style.color = [colors[1]];
-    canvas.style.backgroundColor = [colors[0]];
-    h1.style.borderBottom = `2px solid ${colors[1]}`;
-    colorButton2.style.backgroundColor = [colors[0]];
-    colorButton.style.backgroundColor = [colors[1]];
-    // dolarAmount.style.color = [colors[1]];
-    // bitcoinAmount.style.color = [colors[1]];
-    // modify.style.backgroundColor = [colors[1]];
-  }
-
-  changeBackground(darkColorPalette);
-
-  if (localStorage.getItem("actualColor") === "true") {
-    changeBackground(brightColorPalette);
-    colorButton2.style.marginRight = "18px";
-  } else {
-    actualColor = false;
-  }
-
-  colorButton.addEventListener("click", function () {
-    actualColor = !actualColor;
-
-    console.log(actualColor);
-
-    if (!actualColor) {
-      changeBackground(darkColorPalette);
-      colorButton2.style.marginRight = "40px";
+// Theme management
+const applyTheme = () => {
+    if (state.theme === 'light') {
+        elements.body.setAttribute('data-theme', 'light');
+        elements.themeToggle.classList.add('active');
     } else {
-      changeBackground(brightColorPalette);
-      colorButton2.style.marginRight = "18px";
+        elements.body.removeAttribute('data-theme');
+        elements.themeToggle.classList.remove('active');
     }
+};
 
-    saveActualColor();
-  });
+const toggleTheme = () => {
+    state.theme = state.theme === 'dark' ? 'light' : 'dark';
+    applyTheme();
+    saveState();
+};
 
-  colorButton2.addEventListener("click", function () {
-    actualColor = !actualColor;
-
-    console.log(actualColor);
-
-    if (!actualColor) {
-      changeBackground(darkColorPalette);
-      colorButton2.style.marginRight = "40px";
+// Currency management
+const applyCurrency = () => {
+    elements.currencyToggle.textContent = state.currency.toUpperCase();
+    if (state.currency === 'eur') {
+        elements.currencyToggle.classList.add('eur');
     } else {
-      changeBackground(brightColorPalette);
-      colorButton2.style.marginRight = "18px";
+        elements.currencyToggle.classList.remove('eur');
     }
+    updatePriceDisplay();
+    updatePortfolioDisplay();
+};
 
-    saveActualColor();
-  });
+const toggleCurrency = () => {
+    state.currency = state.currency === 'usd' ? 'eur' : 'usd';
+    applyCurrency();
+    saveState();
+};
 
-  /// Define the canvas element and retrieve its context
-  const context = canvas.getContext("2d");
-
-  // Define the function that fetches the Bitcoin price data
-  async function fetchBitcoinData() {
+// Price data fetching
+const fetchPriceData = async () => {
     try {
-      // Make a request to the CoinGecko API for Bitcoin price data
-      const acutalTime = Math.floor(new Date().getTime() / 1000);
-      const startTime = (acutalTime - 86400) * 1000;
-      const response = await fetch(
-        // "https://api.coingecko.com/api/v3/coins/bitcoin/market_chart?vs_currency=usd&days=1&interval=hourly"
-        "https://api.binance.com/api/v3/klines?symbol=BTCUSDT&interval=1h&startTime=" +
-          startTime
-      );
-      const json = await response.json();
-
-      //for echa convert timestamp to date
-      // json.forEach((element) => {
-      //   element[0] = new Date(element[0]);
-      // });
-      console.log(json);
-
-      // Extract the data from the API response
-      const data = json.map((price) => {
-        return parseFloat(price[4]);
-      });
-
-      console.log(data);
-
-      // data.push(parseFloat(priceDiv.innerHTML.replace(" $", "").replace(",", "")));
-
-      // Draw the chart with the data
-      drawChart(data);
-      console.log(data);
+        const response = await fetch(API.PRICE);
+        const data = await response.json();
+        
+        if (data && data.length >= 2) {
+            const btcUsdt = data.find(item => item.symbol === 'BTCUSDT');
+            const btcEur = data.find(item => item.symbol === 'BTCEUR');
+            
+            if (btcUsdt && btcEur) {
+                state.currentPrice = parseFloat(btcUsdt.lastPrice);
+                state.eurPrice = parseFloat(btcEur.lastPrice);
+                state.priceData = {
+                    high24h: parseFloat(btcUsdt.highPrice),
+                    low24h: parseFloat(btcUsdt.lowPrice),
+                    change24h: parseFloat(btcUsdt.priceChange),
+                    changePercent24h: parseFloat(btcUsdt.priceChangePercent)
+                };
+                
+                updatePriceDisplay();
+                updatePortfolioDisplay();
+                checkAlarms();
+            }
+        }
     } catch (error) {
-      console.error("Error retrieving Bitcoin price data:", error);
+        console.error('Failed to fetch price data:', error);
+        elements.priceValue.textContent = 'Error loading price';
     }
-  }
+};
 
-  //chart js plugin
+// Chart data fetching
+const fetchChartData = async () => {
+    try {
+        const response = await fetch(API.CHART);
+        const data = await response.json();
+        
+        if (data && Array.isArray(data)) {
+            const chartData = data.map(candle => parseFloat(candle[4])); // closing prices
+            drawChart(chartData);
+        }
+    } catch (error) {
+        console.error('Failed to fetch chart data:', error);
+    }
+};
 
-  // hoverValue plugin block
-  const hoverValue = {
-    id: "hoverValue",
-    afterDatasetsDraw(chart, args, pluginOptions) {
-      const { ctx, data, options } = chart;
-      chart.getActiveElements().forEach((active) => {
-        const value = data.datasets[active.datasetIndex].data[active.index];
-        const valueToDisplay =
-          value
-            .toFixed(2)
-            .toString()
-            .replace(/\B(?=(\d{3})+(?!\d))/g, ",") + " $";
-        ctx.save();
+// Update UI
+const updatePriceDisplay = () => {
+    if (!state.currentPrice && !state.eurPrice) return;
+    
+    const price = state.currency === 'usd' ? state.currentPrice : state.eurPrice;
+    const currency = state.currency === 'usd' ? '$' : '€';
+    
+    elements.priceValue.textContent = `${formatNumber(price.toFixed(2))} ${currency}`;
+    
+    // Price change
+    const changePercent = state.priceData.changePercent24h;
+    const isPositive = changePercent >= 0;
+    
+    elements.priceChange.className = `price-change ${isPositive ? 'positive' : 'negative'}`;
+    elements.priceChange.innerHTML = `
+        <span>${isPositive ? '↗' : '↘'}</span>
+        <span>${isPositive ? '+' : ''}${changePercent.toFixed(2)}%</span>
+    `;
+    
+    // 24h stats
+    const high24h = state.currency === 'usd' ? state.priceData.high24h : state.priceData.high24h * (state.eurPrice / state.currentPrice);
+    const low24h = state.currency === 'usd' ? state.priceData.low24h : state.priceData.low24h * (state.eurPrice / state.currentPrice);
+    
+    elements.priceHigh.textContent = `${formatNumber(high24h.toFixed(2))} ${currency}`;
+    elements.priceLow.textContent = `${formatNumber(low24h.toFixed(2))} ${currency}`;
+};
 
-        ctx.fillStyle = "#c16900";
-        ctx.fillRect(active.element.x - 50, active.element.y - 33, 100, 23);
+const updatePortfolioDisplay = () => {
+    if (!state.portfolioAmount) return;
+    
+    elements.portfolioBtc.textContent = `${state.portfolioAmount.toFixed(8)} BTC`;
+    
+    const price = state.currency === 'usd' ? state.currentPrice : state.eurPrice;
+    const currency = state.currency === 'usd' ? '$' : '€';
+    const portfolioValue = state.portfolioAmount * price;
+    
+    elements.portfolioUsd.textContent = `≈ ${formatNumber(portfolioValue.toFixed(2))} ${currency}`;
+};
 
-        //white text
-        ctx.fillStyle = "#fff";
+// Chart functionality
+let chartInstance = null;
 
-        ctx.font = `18px Arial`;
-
-        ctx.fillStyle =
-          data.datasets[active.datasetIndex].borderColor[active.index];
-
-        ctx.textAlign = "center";
-
-        ctx.fillText(valueToDisplay, active.element.x, active.element.y - 15);
-
-        ctx.restore();
-      });
-    },
-  };
-
-  // Define the function that draws the chart
-  function drawChart(data) {
-    // Define the chart configuration
-    const config = {
-      type: "line",
-      data: {
-        labels: [
-          "1",
-          "2",
-          "3",
-          "4",
-          "5",
-          "6",
-          "7",
-          "8",
-          "9",
-          "10",
-          "11",
-          "12",
-          "13",
-          "14",
-          "15",
-          "16",
-          "17",
-          "18",
-          "19",
-          "20",
-          "21",
-          "22",
-          "23",
-          "24",
-        ],
-        datasets: [
-          {
-            label: "Bitcoin Price",
-            data: data,
-            backgroundColor: "rgba(255, 99, 132, 0.2)",
-            borderColor: "#F7931A",
-            pointBorderColor: "#fff",
-            pointHoverRadius: 8,
-            lineTension: 0.35,
-            pointRadius: 4,
-            pointHoverBackgroundColor: "#F7931A",
-          },
-        ],
-      },
-      options: {
-        plugins: {
-          chartAreaBorder: {
-            borderColor: "white",
-            borderWidth: 2,
-          },
+const drawChart = (data) => {
+    const ctx = elements.chart.getContext('2d');
+    
+    if (chartInstance) {
+        chartInstance.destroy();
+    }
+    
+    const isDark = state.theme === 'dark';
+    const textColor = isDark ? '#EAECEF' : '#181A20';
+    const gridColor = isDark ? '#2B3139' : '#E5E5E5';
+    
+    chartInstance = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: Array.from({ length: 24 }, (_, i) => {
+                const hour = new Date().getHours() - (23 - i);
+                return hour < 0 ? hour + 24 : hour;
+            }),
+            datasets: [{
+                label: 'Bitcoin Price',
+                data: data,
+                borderColor: '#F0B90B',
+                backgroundColor: 'rgba(240, 185, 11, 0.1)',
+                borderWidth: 2,
+                pointRadius: 0,
+                pointHoverRadius: 6,
+                pointHoverBackgroundColor: '#F0B90B',
+                pointHoverBorderColor: '#000',
+                pointHoverBorderWidth: 2,
+                fill: true,
+                tension: 0.4
+            }]
         },
-        responsive: true,
-        scales: {
-          y: {
-            ticks: {
-              padding: 11,
-              color: "#fff",
-              maxTicksLimit: 5,
-              font: {
-                family: "Poppins",
-                size: 15,
-              },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    backgroundColor: isDark ? '#2B3139' : '#FFFFFF',
+                    titleColor: textColor,
+                    bodyColor: textColor,
+                    borderColor: isDark ? '#848E9C' : '#E5E5E5',
+                    borderWidth: 1,
+                    cornerRadius: 8,
+                    displayColors: false,
+                    callbacks: {
+                        title: (context) => `${context[0].label}:00`,
+                        label: (context) => {
+                            const currency = state.currency === 'usd' ? '$' : '€';
+                            return `${formatNumber(context.parsed.y.toFixed(2))} ${currency}`;
+                        }
+                    }
+                }
             },
-            grid: {
-              display: false,
+            scales: {
+                x: {
+                    display: false
+                },
+                y: {
+                    display: true,
+                    grid: {
+                        color: gridColor,
+                        drawBorder: false
+                    },
+                    ticks: {
+                        color: textColor,
+                        font: { size: 11 },
+                        maxTicksLimit: 5,
+                        callback: function(value) {
+                            return formatNumber(value.toFixed(0));
+                        }
+                    }
+                }
             },
-          },
-          x: {
-            ticks: {
-              display: false,
-            },
-            grid: {
-              display: false,
-            },
-          },
-        },
-        plugins: {
-          tooltip: {
-            enabled: false,
-            mode: "dataset",
-          },
-          legend: {
-            display: false,
-          },
-        },
-      },
-      plugins: [hoverValue],
+            interaction: {
+                intersect: false,
+                mode: 'index'
+            }
+        }
+    });
+};
+
+// Alarm management
+const checkAlarms = () => {
+    if (!state.currentPrice || state.alarms.length === 0) return;
+    
+    const triggeredAlarms = [];
+    
+    state.alarms.forEach((alarm, index) => {
+        const isTriggered = alarm.type === 'above' 
+            ? state.currentPrice >= alarm.price 
+            : state.currentPrice <= alarm.price;
+            
+        if (isTriggered) {
+            triggeredAlarms.push(alarm);
+            // Remove triggered alarm
+            state.alarms.splice(index, 1);
+        }
+    });
+    
+    if (triggeredAlarms.length > 0) {
+        // Send message to background script to create notifications
+        chrome.runtime.sendMessage({
+            action: 'createAlarmNotification',
+            alarms: triggeredAlarms,
+            currentPrice: state.currentPrice
+        });
+        
+        saveState();
+        renderAlarms();
+    }
+};
+
+const addAlarm = (price, type) => {
+    const alarm = {
+        id: Date.now(),
+        price: parseFloat(price),
+        type: type,
+        created: new Date().toISOString()
     };
+    
+    state.alarms.push(alarm);
+    saveState();
+    renderAlarms();
+};
 
-    // Create the chart
-    const chart = new Chart(context, config);
+const removeAlarm = (alarmId) => {
+    state.alarms = state.alarms.filter(alarm => alarm.id !== alarmId);
+    saveState();
+    renderAlarms();
+};
 
-    document.addEventListener("DOMContentLoaded", function () {
-      if (!actualColor) {
-        chart.config.options.scales.y.ticks.color = "#fff";
-        chart.config.data.datasets[0].pointBorderColor = "#fff";
-      } else {
-        chart.config.options.scales.y.ticks.color = darkColorPalette[0];
-        chart.config.data.datasets[0].pointBorderColor = darkColorPalette[0];
-      }
-
-      chart.update();
-
-      saveActualColor();
-    });
-
-    if (localStorage.getItem("actualColor") === "true") {
-      chart.config.options.scales.y.ticks.color = darkColorPalette[0];
-      chart.config.data.datasets[0].pointBorderColor = darkColorPalette[0];
-      chart.update();
+const renderAlarms = () => {
+    if (state.alarms.length === 0) {
+        elements.alarmsListContainer.innerHTML = `
+            <div style="color: var(--text-muted); font-size: 14px; text-align: center; padding: 20px 0;">
+                No price alerts set
+            </div>
+        `;
+        return;
     }
+    
+    elements.alarmsListContainer.innerHTML = state.alarms.map(alarm => `
+        <div class="alarm-item">
+            <div>
+                <div class="alarm-price">${formatNumber(alarm.price)} ${state.currency === 'usd' ? '$' : '€'}</div>
+                <div class="alarm-type">${alarm.type === 'above' ? 'Above' : 'Below'} target</div>
+            </div>
+            <button class="alarm-delete" onclick="removeAlarm(${alarm.id})">Delete</button>
+        </div>
+    `).join('');
+};
 
-    colorButton.addEventListener("click", function () {
-      if (!actualColor) {
-        chart.config.options.scales.y.ticks.color = "#fff";
-        chart.config.data.datasets[0].pointBorderColor = "#fff";
-      } else {
-        chart.config.options.scales.y.ticks.color = darkColorPalette[0];
-        chart.config.data.datasets[0].pointBorderColor = darkColorPalette[0];
-      }
+// Modal management
+const showModal = (modal) => {
+    modal.style.display = 'flex';
+    setTimeout(() => modal.style.opacity = '1', 10);
+};
 
-      chart.update();
+const hideModal = (modal) => {
+    modal.style.opacity = '0';
+    setTimeout(() => modal.style.display = 'none', 300);
+};
 
-      saveActualColor();
+// Portfolio management
+const openPortfolioModal = () => {
+    elements.portfolioInput.value = state.portfolioAmount;
+    showModal(elements.portfolioModal);
+    elements.portfolioInput.focus();
+};
+
+const savePortfolio = () => {
+    const amount = parseFloat(elements.portfolioInput.value);
+    
+    if (!isNaN(amount) && amount >= 0) {
+        state.portfolioAmount = amount;
+        updatePortfolioDisplay();
+        saveState();
+        hideModal(elements.portfolioModal);
+    } else {
+        elements.portfolioInput.style.borderColor = 'var(--accent-red)';
+        setTimeout(() => {
+            elements.portfolioInput.style.borderColor = 'var(--border-color)';
+        }, 2000);
+    }
+};
+
+// Alarm modal management
+const openAlarmModal = () => {
+    elements.alarmPrice.value = '';
+    elements.alarmType.value = 'above';
+    showModal(elements.alarmModal);
+    elements.alarmPrice.focus();
+};
+
+const saveAlarmModal = () => {
+    const price = parseFloat(elements.alarmPrice.value);
+    const type = elements.alarmType.value;
+    
+    if (!isNaN(price) && price > 0) {
+        addAlarm(price, type);
+        hideModal(elements.alarmModal);
+    } else {
+        elements.alarmPrice.style.borderColor = 'var(--accent-red)';
+        setTimeout(() => {
+            elements.alarmPrice.style.borderColor = 'var(--border-color)';
+        }, 2000);
+    }
+};
+
+// Event listeners
+const setupEventListeners = () => {
+    // Theme toggle
+    elements.themeToggle.addEventListener('click', toggleTheme);
+    
+    // Currency toggle
+    elements.currencyToggle.addEventListener('click', toggleCurrency);
+    
+    // Portfolio modal
+    elements.editPortfolio.addEventListener('click', openPortfolioModal);
+    elements.closePortfolio.addEventListener('click', () => hideModal(elements.portfolioModal));
+    elements.cancelPortfolio.addEventListener('click', () => hideModal(elements.portfolioModal));
+    elements.savePortfolio.addEventListener('click', savePortfolio);
+    
+    // Portfolio input enter key
+    elements.portfolioInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') savePortfolio();
     });
-
-    colorButton2.addEventListener("click", function () {
-      if (!actualColor) {
-        chart.config.options.scales.y.ticks.color = "#fff";
-        chart.config.data.datasets[0].pointBorderColor = "#fff";
-      } else {
-        chart.config.options.scales.y.ticks.color = darkColorPalette[0];
-        chart.config.data.datasets[0].pointBorderColor = darkColorPalette[0];
-      }
-
-      chart.update();
-
-      saveActualColor();
+    
+    // Alarm modal
+    elements.addAlarm.addEventListener('click', openAlarmModal);
+    elements.closeAlarm.addEventListener('click', () => hideModal(elements.alarmModal));
+    elements.cancelAlarm.addEventListener('click', () => hideModal(elements.alarmModal));
+    elements.saveAlarm.addEventListener('click', saveAlarmModal);
+    
+    // Alarm input enter key
+    elements.alarmPrice.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') saveAlarmModal();
     });
-  }
+    
+    // Click outside modal to close
+    elements.portfolioModal.addEventListener('click', (e) => {
+        if (e.target === elements.portfolioModal) hideModal(elements.portfolioModal);
+    });
+    
+    elements.alarmModal.addEventListener('click', (e) => {
+        if (e.target === elements.alarmModal) hideModal(elements.alarmModal);
+    });
+};
 
-  // Call the fetchBitcoinData function to fetch the data and draw the chart
-  fetchBitcoinData();
-});
+// Global functions (for onclick handlers)
+window.removeAlarm = removeAlarm;
 
-// async function refresh() {
-//   const firstFetch = await fetch(url);
-//   const data = await firstFetch.json();
-//   const price = parseFloat(data[0].price);
-//   const eurPrice = parseFloat(data[1].price);
-//   const onlyTwoDecimals = price.toFixed(2);
-//   const onlyTwoDecimalsEur = eurPrice.toFixed(2);
-//   const addThousandsSeparator = onlyTwoDecimals.replace(
-//     /\B(?=(\d{3})+(?!\d))/g,
-//     ","
-//   );
-//   const addThousandsSeparatorEur = onlyTwoDecimalsEur.replace(
-//     /\B(?=(\d{3})+(?!\d))/g,
-//     ","
-//   );
-//   const toText = addThousandsSeparator.toString();
-//   const toTextEur = addThousandsSeparatorEur.toString();
-//   const subtr = toText.substr(0, 4);
+// Initialize app
+const init = async () => {
+    // Apply initial theme and currency
+    applyTheme();
+    applyCurrency();
+    
+    // Setup event listeners
+    setupEventListeners();
+    
+    // Render initial alarms
+    renderAlarms();
+    
+    // Fetch initial data
+    await fetchPriceData();
+    await fetchChartData();
+    
+    // Setup periodic updates
+    setInterval(fetchPriceData, 5000);
+    setInterval(fetchChartData, 60000);
+    
+    // Wake up background script
+    chrome.runtime.sendMessage({ action: 'wakeUp' });
+};
 
-//   chrome.action.setBadgeText({ text: `${subtr}K` });
-//   chrome.action.setBadgeBackgroundColor({ color: "#217908" });
-
-//   const secondFetch = await fetch(
-//     "https://api.coingecko.com/api/v3/coins/bitcoin"
-//   );
-//   const data2 = await secondFetch.json();
-//   const minToday = data2.market_data.low_24h.usd;
-//   const minThousands = minToday
-//     .toString()
-//     .replace(/\B(?=(\d{3})+(?!\d))/g, ",");
-//   const athToday = data2.market_data.high_24h.usd;
-//   const athThousands = athToday
-//     .toString()
-//     .replace(/\B(?=(\d{3})+(?!\d))/g, ",");
-
-//   chrome.action.setTitle({
-//     title: `Bitcoin Pice \nUSD: ${toText}$ \nEUR: ${toTextEur}€\nHigh 24h: ${athThousands}$\nLow 24h: ${minThousands}$ \n\nLast updated: ${new Date().toLocaleTimeString()}`,
-//   });
-//   console.log(
-//     `Bitcoin Pice \nUSD: ${toText}$ \nEUR: ${toTextEur}€\nHigh 24h: ${athThousands}$\nLow 24h: ${minThousands}$ \n\nLast updated: ${new Date().toLocaleTimeString()}`,
-//     `${subtr}K`,
-//     toText
-//   );
-//   function refreshBitcoinPrice() {
-//     const intPrice = parseFloat(toText.replace(",", ""));
-//     const eurPrice = parseFloat(eurPriceDiv.innerHTML.replace(",", ""));
-//     const floatBitcoinAmount = parseFloat(
-//       bitcoinAmount.innerHTML.replace(",", ".")
-//     );
-//     console.log(intPrice, floatBitcoinAmount, eurPrice);
-
-//     if (!actualCurrency) {
-//       dolarAmount.innerHTML = `≈ ${spaceEveryThreeDigits(
-//         (intPrice * floatBitcoinAmount).toFixed(2)
-//       )} $`;
-//     } else {
-//       dolarAmount.innerHTML = `≈ ${spaceEveryThreeDigits(
-//         (eurPrice * floatBitcoinAmount).toFixed(2)
-//       )} €`;
-//     }
-//   }
-//   refreshBitcoinPrice();
-// }
-
-refreshData();
-
-setInterval(refreshData, 4000);
-
-//wake up background script
+// Start the application
+document.addEventListener('DOMContentLoaded', init);

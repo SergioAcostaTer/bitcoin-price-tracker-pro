@@ -65,9 +65,9 @@ function formatPrice(price) {
 
 function setLoading(isLoading) {
   loading = isLoading;
-  if (loading) {
-    chrome.action.setBadgeText({ text: '...' });
-  }
+  // if (loading) {
+  //   chrome.action.setBadgeText({ text: '...' });
+  // }
 }
 
 function refreshStart() {
