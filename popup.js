@@ -374,6 +374,7 @@ const addAlarm = async (price, type) => {
     price: parseFloat(price),
     type: type,
     created: new Date().toISOString(),
+    currency: state.currency,
   };
 
   state.alarms.push(alarm);
@@ -403,7 +404,7 @@ const renderAlarms = () => {
     <div class="alarm-item">
       <div>
         <div class="alarm-price">${
-          state.currency === "usd" ? "$" : "€"
+          alarm.currency === "usd" ? "$" : "€"
         }${formatNumber(alarm.price)}</div>
         <div class="alarm-type">${
           alarm.type === "above" ? "Above" : "Below"

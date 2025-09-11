@@ -67,10 +67,13 @@ async function checkStoredAlarms() {
     const remainingAlarms = [];
     
     alarms.forEach(alarm => {
+      const {currency} = alarm;
+      const priceToCheck = currency === 'usd' ? currentPrice : eurPrice;
+
       const isTriggered = alarm.type === 'above' 
-        ? currentPrice >= alarm.price 
-        : currentPrice <= alarm.price;
-        
+        ? priceToCheck >= alarm.price 
+        : priceToCheck <= alarm.price;
+
       if (isTriggered) {
         triggeredAlarms.push(alarm);
       } else {
@@ -187,7 +190,7 @@ function setLoading(isLoading) {
 function refreshStart() {
   refresh();
   // Create Chrome alarm instead of setInterval
-  chrome.alarms.create('priceCheck', { periodInMinutes: 1 }); // Every 1 minute
+  chrome.alarms.create('priceCheck', { periodInMinutes: 10 / 60 }); // every 10 seconds
 }
 
 // Handle Chrome alarms
@@ -204,5 +207,3 @@ chrome.alarms.clear('priceCheck', () => {
 
 // Initialize on startup
 refresh();
-
-setInterval(refresh, 15 * 1000);
