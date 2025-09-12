@@ -27,7 +27,8 @@
     "storage"
   ],
   "host_permissions": [
-    "https://api.binance.com/*"
+    "https://api.binance.com/api/v3/ticker/24hr*",
+    "https://api.binance.com/api/v3/klines*"
   ],
   "content_security_policy": {
     "extension_pages": "script-src 'self'; object-src 'self'"

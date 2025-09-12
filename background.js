@@ -191,7 +191,7 @@ function setLoading(isLoading) {
 function refreshStart() {
   refresh();
   // Create Chrome alarm instead of setInterval
-  chrome.alarms.create('priceCheck', { periodInMinutes: 10 / 60 }); // every 10 seconds
+  chrome.alarms.create('priceCheck', { periodInMinutes: 1 });
 }
 
 // Handle Chrome alarms

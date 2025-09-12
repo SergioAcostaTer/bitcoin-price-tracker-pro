@@ -2,627 +2,633 @@
 <html>
 
 <head>
-    <title>Bitcoin Price Chart</title>
-    <meta charset="utf-8">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <script src="chart.js"></script>
-    <script src="popup.js" defer></script>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+  <title>Bitcoin Price Chart</title>
+  <meta charset="utf-8">
+  <script src="chart.js"></script>
+  <script src="popup.js" defer></script>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
 
-        html, body {
-            width: 350px;
-            min-width: 350px;
-            min-height: 570px;
-            max-width: 350px;
-            font-family: 'Inter', sans-serif;
-            background: var(--bg-primary);
-            color: var(--text-primary);
-            transition: all 0.3s ease;
-            position: relative;
-        }
+    html,
+    body {
+      width: 350px;
+      min-width: 350px;
+      min-height: 570px;
+      max-width: 350px;
+      font-family: 'Inter', sans-serif;
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      transition: all 0.3s ease;
+      position: relative;
+    }
 
-        :root {
-            --bg-primary: #0B0E11;
-            --bg-secondary: #1E2329;
-            --bg-tertiary: #2B3139;
-            --border-color: #2B3139;
-            --text-primary: #EAECEF;
-            --text-secondary: #848E9C;
-            --text-muted: #5E6673;
-            --accent-yellow: #F0B90B;
-            --accent-green: #0ECB81;
-            --accent-red: #F84960;
-            --accent-blue: #1E53E6;
-            --shadow: rgba(0, 0, 0, 0.4);
-        }
+    :root {
+      --bg-primary: #0B0E11;
+      --bg-secondary: #1E2329;
+      --bg-tertiary: #2B3139;
+      --border-color: #2B3139;
+      --text-primary: #EAECEF;
+      --text-secondary: #848E9C;
+      --text-muted: #5E6673;
+      --accent-yellow: #F0B90B;
+      --accent-green: #0ECB81;
+      --accent-red: #F84960;
+      --accent-blue: #1E53E6;
+      --shadow: rgba(0, 0, 0, 0.4);
+    }
 
-        [data-theme="light"] {
-            --bg-primary: #FAFAFA;
-            --bg-secondary: #FFFFFF;
-            --bg-tertiary: #F5F5F5;
-            --border-color: #E5E5E5;
-            --text-primary: #181A20;
-            --text-secondary: #707A8A;
-            --text-muted: #B7BDC6;
-            --shadow: rgba(0, 0, 0, 0.1);
-        }
+    [data-theme="light"] {
+      --bg-primary: #FAFAFA;
+      --bg-secondary: #FFFFFF;
+      --bg-tertiary: #F5F5F5;
+      --border-color: #E5E5E5;
+      --text-primary: #181A20;
+      --text-secondary: #707A8A;
+      --text-muted: #B7BDC6;
+      --shadow: rgba(0, 0, 0, 0.1);
+    }
 
-        /* Header */
-        .header {
-            background: var(--bg-secondary);
-            border-bottom: 1px solid var(--border-color);
-            padding: 12px 16px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-        }
+    /* Header */
+    .header {
+      background: var(--bg-secondary);
+      border-bottom: 1px solid var(--border-color);
+      padding: 12px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
 
-        .header-title {
-            font-size: 16px;
-            font-weight: 600;
-            color: var(--text-primary);
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
+    .header-title {
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--text-primary);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
 
-        .bitcoin-icon {
-            width: 20px;
-            height: 20px;
-            background: var(--accent-yellow);
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 12px;
-            font-weight: 700;
-            color: #000;
-        }
+    .bitcoin-icon {
+      width: 20px;
+      height: 20px;
+      background: var(--accent-yellow);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      font-weight: 700;
+      color: #000;
+    }
 
-        .header-controls {
-            display: flex;
-            gap: 8px;
-            align-items: center;
-        }
+    .header-controls {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
 
-        /* Toggle Switches */
-        .toggle-switch {
-            position: relative;
-            width: 36px;
-            height: 18px;
-            background: var(--bg-tertiary);
-            border-radius: 9px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            border: 1px solid var(--border-color);
-        }
+    /* Toggle Switches */
+    .toggle-switch {
+      position: relative;
+      width: 36px;
+      height: 18px;
+      background: var(--bg-tertiary);
+      border-radius: 9px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      border: 1px solid var(--border-color);
+    }
 
-        .toggle-switch.active {
-            background: var(--accent-yellow);
-        }
+    .toggle-switch.active {
+      background: var(--accent-yellow);
+    }
 
-        .toggle-knob {
-            position: absolute;
-            top: 1px;
-            left: 1px;
-            width: 14px;
-            height: 14px;
-            background: var(--text-primary);
-            border-radius: 50%;
-            transition: all 0.3s ease;
-            box-shadow: 0 1px 3px var(--shadow);
-        }
+    .toggle-knob {
+      position: absolute;
+      top: 1px;
+      left: 1px;
+      width: 14px;
+      height: 14px;
+      background: var(--text-primary);
+      border-radius: 50%;
+      transition: all 0.3s ease;
+      box-shadow: 0 1px 3px var(--shadow);
+    }
 
-        .toggle-switch.active .toggle-knob {
-            transform: translateX(16px);
-            background: #000;
-        }
+    .toggle-switch.active .toggle-knob {
+      transform: translateX(16px);
+      background: #000;
+    }
 
-        .currency-toggle {
-            background: var(--accent-green);
-            color: white;
-            border: none;
-            padding: 4px 10px;
-            border-radius: 6px;
-            font-size: 11px;
-            font-weight: 500;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            min-width: 36px;
-        }
+    .currency-toggle {
+      background: var(--accent-green);
+      color: white;
+      border: none;
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      min-width: 36px;
+    }
 
-        .currency-toggle.eur {
-            background: var(--accent-blue);
-        }
+    .currency-toggle.eur {
+      background: var(--accent-blue);
+    }
 
-        /* Price Section */
-        .price-section {
-            background: var(--bg-secondary);
-            padding: 16px;
-            margin: 12px 16px;
-            border-radius: 10px;
-            border: 1px solid var(--border-color);
-            box-shadow: 0 2px 8px var(--shadow);
-        }
+    /* Price Section */
+    .price-section {
+      background: var(--bg-secondary);
+      padding: 16px;
+      margin: 12px 16px;
+      border-radius: 10px;
+      border: 1px solid var(--border-color);
+      box-shadow: 0 2px 8px var(--shadow);
+    }
 
-        .price-main {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            margin-bottom: 12px;
-        }
+    .price-main {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 12px;
+    }
 
-        .price-value {
-            font-size: 24px;
-            font-weight: 700;
-            color: var(--text-primary);
-            display: flex;
-            align-items: center;
-            gap: 6px;
-        }
+    .price-value {
+      font-size: 24px;
+      font-weight: 700;
+      color: var(--text-primary);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
 
-        .price-change {
-            font-size: 12px;
-            font-weight: 500;
-            padding: 3px 6px;
-            border-radius: 4px;
-            display: flex;
-            align-items: center;
-            gap: 3px;
-        }
+    .price-change {
+      font-size: 12px;
+      font-weight: 500;
+      padding: 3px 6px;
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      gap: 3px;
+    }
 
-        .price-change.positive {
-            background: rgba(14, 203, 129, 0.1);
-            color: var(--accent-green);
-        }
+    .price-change.positive {
+      background: rgba(14, 203, 129, 0.1);
+      color: var(--accent-green);
+    }
 
-        .price-change.negative {
-            background: rgba(248, 73, 96, 0.1);
-            color: var(--accent-red);
-        }
+    .price-change.negative {
+      background: rgba(248, 73, 96, 0.1);
+      color: var(--accent-red);
+    }
 
-        .price-stats {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 12px;
-        }
+    .price-stats {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
 
-        .price-stat {
-            display: flex;
-            flex-direction: column;
-            gap: 3px;
-        }
+    .price-stat {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
 
-        .price-stat-label {
-            font-size: 10px;
-            color: var(--text-secondary);
-            text-transform: uppercase;
-            font-weight: 500;
-        }
+    .price-stat-label {
+      font-size: 10px;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+      font-weight: 500;
+    }
 
-        .price-stat-value {
-            font-size: 12px;
-            font-weight: 600;
-            color: var(--text-primary);
-        }
+    .price-stat-value {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
 
-        /* Portfolio Section */
-        .portfolio-section {
-            background: var(--bg-secondary);
-            padding: 12px 16px;
-            margin: 0 16px 12px 16px;
-            border-radius: 10px;
-            border: 1px solid var(--border-color);
-            box-shadow: 0 2px 8px var(--shadow);
-        }
+    /* Portfolio Section */
+    .portfolio-section {
+      background: var(--bg-secondary);
+      padding: 12px 16px;
+      margin: 0 16px 12px 16px;
+      border-radius: 10px;
+      border: 1px solid var(--border-color);
+      box-shadow: 0 2px 8px var(--shadow);
+    }
 
-        .portfolio-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 8px;
-        }
+    .portfolio-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+    }
 
-        .portfolio-title {
-            font-size: 14px;
-            font-weight: 600;
-            color: var(--text-primary);
-        }
+    .portfolio-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
 
-        .portfolio-edit {
-            background: var(--accent-yellow);
-            color: #000;
-            border: none;
-            padding: 4px 8px;
-            border-radius: 4px;
-            font-size: 10px;
-            font-weight: 500;
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
+    .portfolio-edit {
+      background: var(--accent-yellow);
+      color: #000;
+      border: none;
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 10px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
 
-        .portfolio-edit:hover {
-            opacity: 0.8;
-        }
+    .portfolio-edit:hover {
+      opacity: 0.8;
+    }
 
-        .portfolio-amount {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
+    .portfolio-amount {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
 
-        .portfolio-btc {
-            font-size: 16px;
-            font-weight: 700;
-            color: var(--text-primary);
-        }
+    .portfolio-btc {
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--text-primary);
+    }
 
-        .portfolio-usd {
-            font-size: 12px;
-            color: var(--text-secondary);
-            font-weight: 500;
-        }
+    .portfolio-usd {
+      font-size: 12px;
+      color: var(--text-secondary);
+      font-weight: 500;
+    }
 
-        /* Chart Section */
-        .chart-section {
-            margin: 0 16px 12px 16px;
-            background: var(--bg-secondary);
-            border-radius: 10px;
-            border: 1px solid var(--border-color);
-            overflow: hidden;
-            box-shadow: 0 2px 8px var(--shadow);
-        }
+    /* Chart Section */
+    .chart-section {
+      margin: 0 16px 12px 16px;
+      background: var(--bg-secondary);
+      border-radius: 10px;
+      border: 1px solid var(--border-color);
+      overflow: hidden;
+      box-shadow: 0 2px 8px var(--shadow);
+    }
 
-        .chart-header {
-            padding: 12px 16px;
-            border-bottom: 1px solid var(--border-color);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
+    .chart-header {
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
 
-        .chart-title {
-            font-size: 12px;
-            font-weight: 600;
-            color: var(--text-primary);
-        }
+    .chart-title {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
 
-        .chart-period {
-            font-size: 10px;
-            color: var(--text-secondary);
-        }
+    .chart-period {
+      font-size: 10px;
+      color: var(--text-secondary);
+    }
 
-        .chart-container {
-            padding: 8px;
-            height: 140px;
-            position: relative;
-        }
+    .chart-container {
+      padding: 8px;
+      height: 140px;
+      position: relative;
+    }
 
-        canvas {
-            width: 100% !important;
-            height: 100% !important;
-            background: var(--bg-secondary);
-        }
+    canvas {
+      width: 100% !important;
+      height: 100% !important;
+      background: var(--bg-secondary);
+    }
 
-        /* Alarms Section */
-        .alarms-section {
-            background: var(--bg-secondary);
-            padding: 12px 16px;
-            margin: 0 16px 16px 16px;
-            border-radius: 10px;
-            border: 1px solid var(--border-color);
-            box-shadow: 0 2px 8px var(--shadow);
-            margin-bottom: 16px;
-        }
+    /* Alarms Section */
+    .alarms-section {
+      background: var(--bg-secondary);
+      padding: 12px 16px;
+      margin: 0 16px 16px 16px;
+      border-radius: 10px;
+      border: 1px solid var(--border-color);
+      box-shadow: 0 2px 8px var(--shadow);
+      margin-bottom: 16px;
+    }
 
-        .alarms-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 8px;
-        }
+    .alarms-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+    }
 
-        .alarms-title {
-            font-size: 14px;
-            font-weight: 600;
-            color: var(--text-primary);
-        }
+    .alarms-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
 
-        .add-alarm-btn {
-            background: var(--accent-green);
-            color: white;
-            border: none;
-            padding: 4px 8px;
-            border-radius: 4px;
-            font-size: 10px;
-            font-weight: 500;
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
+    .add-alarm-btn {
+      background: var(--accent-green);
+      color: white;
+      border: none;
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 10px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
 
-        .alarm-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 8px 0;
-            border-bottom: 1px solid var(--border-color);
-        }
+    .alarm-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 8px 0;
+      border-bottom: 1px solid var(--border-color);
+    }
 
-        .alarm-item:last-child {
-            border-bottom: none;
-        }
+    .alarm-item:last-child {
+      border-bottom: none;
+    }
 
-        .alarm-price {
-            font-size: 14px;
-            font-weight: 600;
-            color: var(--text-primary);
-        }
+    .alarm-price {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
 
-        .alarm-type {
-            font-size: 10px;
-            color: var(--text-secondary);
-            text-transform: uppercase;
-        }
+    .alarm-type {
+      font-size: 10px;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+    }
 
-        .alarm-delete {
-            background: var(--accent-red);
-            color: white;
-            border: none;
-            padding: 2px 6px;
-            border-radius: 3px;
-            font-size: 9px;
-            cursor: pointer;
-        }
+    .alarm-delete {
+      background: var(--accent-red);
+      color: white;
+      border: none;
+      padding: 2px 6px;
+      border-radius: 3px;
+      font-size: 9px;
+      cursor: pointer;
+    }
 
-        /* Modals */
-        .modal-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.6);
-            display: none;
-            align-items: center;
-            justify-content: center;
-            z-index: 1000;
-            backdrop-filter: blur(4px);
-        }
+    /* Modals */
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.6);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      backdrop-filter: blur(4px);
+    }
 
-        .modal {
-            background: var(--bg-secondary);
-            border-radius: 10px;
-            padding: 20px;
-            width: 280px;
-            border: 1px solid var(--border-color);
-            box-shadow: 0 8px 24px var(--shadow);
-        }
+    .modal {
+      background: var(--bg-secondary);
+      border-radius: 10px;
+      padding: 20px;
+      width: 280px;
+      border: 1px solid var(--border-color);
+      box-shadow: 0 8px 24px var(--shadow);
+    }
 
-        .modal-title {
-            font-size: 16px;
-            font-weight: 600;
-            color: var(--text-primary);
-            margin-bottom: 16px;
-        }
+    .modal-title {
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--text-primary);
+      margin-bottom: 16px;
+    }
 
-        .form-group {
-            margin-bottom: 12px;
-        }
+    .form-group {
+      margin-bottom: 12px;
+    }
 
-        .form-label {
-            display: block;
-            font-size: 12px;
-            color: var(--text-secondary);
-            margin-bottom: 6px;
-            font-weight: 500;
-        }
+    .form-label {
+      display: block;
+      font-size: 12px;
+      color: var(--text-secondary);
+      margin-bottom: 6px;
+      font-weight: 500;
+    }
 
-        .form-input {
-            width: 100%;
-            background: var(--bg-primary);
-            border: 1px solid var(--border-color);
-            border-radius: 6px;
-            padding: 10px;
-            font-size: 12px;
-            color: var(--text-primary);
-            transition: all 0.3s ease;
-        }
+    .form-input {
+      width: 100%;
+      background: var(--bg-primary);
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      padding: 10px;
+      font-size: 12px;
+      color: var(--text-primary);
+      transition: all 0.3s ease;
+    }
 
-        .form-input:focus {
-            outline: none;
-            border-color: var(--accent-yellow);
-        }
+    .form-input:focus {
+      outline: none;
+      border-color: var(--accent-yellow);
+    }
 
-        .form-select {
-            width: 100%;
-            background: var(--bg-primary);
-            border: 1px solid var(--border-color);
-            border-radius: 6px;
-            padding: 10px;
-            font-size: 12px;
-            color: var(--text-primary);
-            cursor: pointer;
-        }
+    .form-select {
+      width: 100%;
+      background: var(--bg-primary);
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      padding: 10px;
+      font-size: 12px;
+      color: var(--text-primary);
+      cursor: pointer;
+    }
 
-        .modal-actions {
-            display: flex;
-            gap: 8px;
-            justify-content: flex-end;
-        }
+    .modal-actions {
+      display: flex;
+      gap: 8px;
+      justify-content: flex-end;
+    }
 
-        .btn {
-            padding: 8px 12px;
-            border-radius: 6px;
-            font-size: 12px;
-            font-weight: 500;
-            cursor: pointer;
-            border: none;
-            transition: all 0.3s ease;
-        }
+    .btn {
+      padding: 8px 12px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 500;
+      cursor: pointer;
+      border: none;
+      transition: all 0.3s ease;
+    }
 
-        .btn-primary {
-            background: var(--accent-yellow);
-            color: #000;
-        }
+    .btn-primary {
+      background: var(--accent-yellow);
+      color: #000;
+    }
 
-        .btn-secondary {
-            background: var(--bg-tertiary);
-            color: var(--text-primary);
-            border: 1px solid var(--border-color);
-        }
+    .btn-secondary {
+      background: var(--bg-tertiary);
+      color: var(--text-primary);
+      border: 1px solid var(--border-color);
+    }
 
-        .btn:hover {
-            opacity: 0.8;
-        }
+    .btn:hover {
+      opacity: 0.8;
+    }
 
-        .close-btn {
-            position: absolute;
-            top: 8px;
-            right: 8px;
-            background: none;
-            border: none;
-            font-size: 16px;
-            color: var(--text-secondary);
-            cursor: pointer;
-        }
+    .close-btn {
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      background: none;
+      border: none;
+      font-size: 16px;
+      color: var(--text-secondary);
+      cursor: pointer;
+    }
 
-        /* Loading States */
-        .loading {
-            opacity: 0.7;
-            pointer-events: none;
-        }
+    /* Loading States */
+    .loading {
+      opacity: 0.7;
+      pointer-events: none;
+    }
 
-        .pulse {
-            animation: pulse 2s infinite;
-        }
+    .pulse {
+      animation: pulse 2s infinite;
+    }
 
-        @keyframes pulse {
-            0% { opacity: 1; }
-            50% { opacity: 0.5; }
-            100% { opacity: 1; }
-        }
-    </style>
+    @keyframes pulse {
+      0% {
+        opacity: 1;
+      }
+
+      50% {
+        opacity: 0.5;
+      }
+
+      100% {
+        opacity: 1;
+      }
+    }
+  </style>
 </head>
 
 <body id="body">
-    <!-- Header -->
-    <div class="header">
-        <div class="header-title">
-            <div class="bitcoin-icon">₿</div>
-            Bitcoin Price
-        </div>
-        <div class="header-controls">
-            <button class="currency-toggle" id="currency-toggle">USD</button>
-            <div class="toggle-switch" id="theme-toggle">
-                <div class="toggle-knob"></div>
-            </div>
-        </div>
+  <!-- Header -->
+  <div class="header">
+    <div class="header-title">
+      <div class="bitcoin-icon">₿</div>
+      Bitcoin Price
     </div>
+    <div class="header-controls">
+      <button class="currency-toggle" id="currency-toggle">USD</button>
+      <div class="toggle-switch" id="theme-toggle">
+        <div class="toggle-knob"></div>
+      </div>
+    </div>
+  </div>
 
-    <!-- Price Section -->
-    <div class="price-section">
-        <div class="price-main">
-            <div class="price-value" id="price-value">
-                Loading...
-            </div>
-            <div class="price-change positive" id="price-change">
-                <span>↗</span>
-                <span>+2.45%</span>
-            </div>
-        </div>
-        <div class="price-stats">
-            <div class="price-stat">
-                <div class="price-stat-label">24h High</div>
-                <div class="price-stat-value" id="price-high">-</div>
-            </div>
-            <div class="price-stat">
-                <div class="price-stat-label">24h Low</div>
-                <div class="price-stat-value" id="price-low">-</div>
-            </div>
-        </div>
+  <!-- Price Section -->
+  <div class="price-section">
+    <div class="price-main">
+      <div class="price-value" id="price-value">
+        Loading...
+      </div>
+      <div class="price-change positive" id="price-change">
+        <span>↗</span>
+        <span>+2.45%</span>
+      </div>
     </div>
+    <div class="price-stats">
+      <div class="price-stat">
+        <div class="price-stat-label">24h High</div>
+        <div class="price-stat-value" id="price-high">-</div>
+      </div>
+      <div class="price-stat">
+        <div class="price-stat-label">24h Low</div>
+        <div class="price-stat-value" id="price-low">-</div>
+      </div>
+    </div>
+  </div>
 
-    <!-- Portfolio Section -->
-    <div class="portfolio-section">
-        <div class="portfolio-header">
-            <div class="portfolio-title">My Portfolio</div>
-            <button class="portfolio-edit" id="edit-portfolio">Edit</button>
-        </div>
-        <div class="portfolio-amount">
-            <div class="portfolio-btc" id="portfolio-btc">0.1 BTC</div>
-            <div class="portfolio-usd" id="portfolio-usd">≈ $0.00</div>
-        </div>
+  <!-- Portfolio Section -->
+  <div class="portfolio-section">
+    <div class="portfolio-header">
+      <div class="portfolio-title">My Portfolio</div>
+      <button class="portfolio-edit" id="edit-portfolio">Edit</button>
     </div>
+    <div class="portfolio-amount">
+      <div class="portfolio-btc" id="portfolio-btc">0.1 BTC</div>
+      <div class="portfolio-usd" id="portfolio-usd">≈ $0.00</div>
+    </div>
+  </div>
 
-    <!-- Chart Section -->
-    <div class="chart-section">
-        <div class="chart-header">
-            <div class="chart-title">24H Price Chart</div>
-            <div class="chart-period">Hourly</div>
-        </div>
-        <div class="chart-container">
-            <canvas id="bitcoin-chart"></canvas>
-        </div>
+  <!-- Chart Section -->
+  <div class="chart-section">
+    <div class="chart-header">
+      <div class="chart-title">24H Price Chart</div>
+      <div class="chart-period">Hourly</div>
     </div>
+    <div class="chart-container">
+      <canvas id="bitcoin-chart"></canvas>
+    </div>
+  </div>
 
-    <!-- Alarms Section -->
-    <div class="alarms-section">
-        <div class="alarms-header">
-            <div class="alarms-title">Price Alerts</div>
-            <button class="add-alarm-btn" id="add-alarm">+ Add</button>
-        </div>
-        <div id="alarms-list">
-            <div class="alarm-item" style="color: var(--text-muted); font-size: 12px; text-align: center; padding: 16px 0;">
-                No price alerts set
-            </div>
-        </div>
+  <!-- Alarms Section -->
+  <div class="alarms-section">
+    <div class="alarms-header">
+      <div class="alarms-title">Price Alerts</div>
+      <button class="add-alarm-btn" id="add-alarm">+ Add</button>
     </div>
+    <div id="alarms-list">
+      <div class="alarm-item" style="color: var(--text-muted); font-size: 12px; text-align: center; padding: 16px 0;">
+        No price alerts set
+      </div>
+    </div>
+  </div>
 
-    <!-- Portfolio Modal -->
-    <div class="modal-overlay" id="portfolio-modal">
-        <div class="modal" style="position: relative;">
-            <button class="close-btn" id="close-portfolio">&times;</button>
-            <div class="modal-title">Edit Portfolio</div>
-            <div class="form-group">
-                <label class="form-label">Bitcoin Amount</label>
-                <input type="number" class="form-input" id="portfolio-input" placeholder="0.1" step="0.001" min="0">
-            </div>
-            <div class="modal-actions">
-                <button class="btn btn-secondary" id="cancel-portfolio">Cancel</button>
-                <button class="btn btn-primary" id="save-portfolio">Save</button>
-            </div>
-        </div>
+  <!-- Portfolio Modal -->
+  <div class="modal-overlay" id="portfolio-modal">
+    <div class="modal" style="position: relative;">
+      <button class="close-btn" id="close-portfolio">&times;</button>
+      <div class="modal-title">Edit Portfolio</div>
+      <div class="form-group">
+        <label class="form-label">Bitcoin Amount</label>
+        <input type="number" class="form-input" id="portfolio-input" placeholder="0.1" step="0.001" min="0">
+      </div>
+      <div class="modal-actions">
+        <button class="btn btn-secondary" id="cancel-portfolio">Cancel</button>
+        <button class="btn btn-primary" id="save-portfolio">Save</button>
+      </div>
     </div>
+  </div>
 
-    <!-- Alarm Modal -->
-    <div class="modal-overlay" id="alarm-modal">
-        <div class="modal" style="position: relative;">
-            <button class="close-btn" id="close-alarm">&times;</button>
-            <div class="modal-title">Add Price Alert</div>
-            <div class="form-group">
-                <label class="form-label">Target Price</label>
-                <input type="number" class="form-input" id="alarm-price" placeholder="50000" step="0.01" min="0">
-            </div>
-            <div class="form-group">
-                <label class="form-label">Alert Type</label>
-                <select class="form-select" id="alarm-type">
-                    <option value="above">When price goes above</option>
-                    <option value="below">When price goes below</option>
-                </select>
-            </div>
-            <div class="modal-actions">
-                <button class="btn btn-secondary" id="cancel-alarm">Cancel</button>
-                <button class="btn btn-primary" id="save-alarm">Create Alert</button>
-            </div>
-        </div>
+  <!-- Alarm Modal -->
+  <div class="modal-overlay" id="alarm-modal">
+    <div class="modal" style="position: relative;">
+      <button class="close-btn" id="close-alarm">&times;</button>
+      <div class="modal-title">Add Price Alert</div>
+      <div class="form-group">
+        <label class="form-label">Target Price</label>
+        <input type="number" class="form-input" id="alarm-price" placeholder="50000" step="0.01" min="0">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Alert Type</label>
+        <select class="form-select" id="alarm-type">
+          <option value="above">When price goes above</option>
+          <option value="below">When price goes below</option>
+        </select>
+      </div>
+      <div class="modal-actions">
+        <button class="btn btn-secondary" id="cancel-alarm">Cancel</button>
+        <button class="btn btn-primary" id="save-alarm">Create Alert</button>
+      </div>
     </div>
+  </div>
 </body>
 
 </html>
