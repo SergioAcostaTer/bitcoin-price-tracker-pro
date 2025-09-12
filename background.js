@@ -10,7 +10,7 @@ let cache = "0";
 let loading = false;
 let currentPrice = 0;
 let eurPrice = 0;
-const iconUrl = chrome.runtime.getURL('icon128.png');
+const iconUrl = chrome.runtime.getURL('media/icon128.png');
 
 
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
@@ -39,16 +39,16 @@ async function refresh() {
     setLoading(true);
     const res = await fetch("https://api.binance.com/api/v3/ticker/24hr?symbols=%5B%22BTCUSDT%22,%22BTCEUR%22%5D");
     const data = await res.json();
-    
+
     // Update global price variables
     currentPrice = parseFloat(data[0].lastPrice);
     eurPrice = parseFloat(data[1].lastPrice);
-    
+
     updateBadgeAndTitle(data);
-    
+
     // Check alarms whenever price updates
     await checkStoredAlarms();
-    
+
   } catch (error) {
     console.error('Failed to fetch data:', error);
   } finally {
@@ -61,18 +61,18 @@ async function checkStoredAlarms() {
   try {
     const result = await chrome.storage.local.get(['alarms']);
     const alarms = result.alarms || [];
-    
+
     if (alarms.length === 0 || currentPrice === 0) return;
-    
+
     const triggeredAlarms = [];
     const remainingAlarms = [];
-    
+
     alarms.forEach(alarm => {
-      const {currency} = alarm;
+      const { currency } = alarm;
       const priceToCheck = currency === 'usd' ? currentPrice : eurPrice;
 
-      const isTriggered = alarm.type === 'above' 
-        ? priceToCheck >= alarm.price 
+      const isTriggered = alarm.type === 'above'
+        ? priceToCheck >= alarm.price
         : priceToCheck <= alarm.price;
 
       if (isTriggered) {
@@ -81,17 +81,17 @@ async function checkStoredAlarms() {
         remainingAlarms.push(alarm);
       }
     });
-    
+
     if (triggeredAlarms.length > 0) {
       // Create notifications for triggered alarms
       await createAlarmNotifications(triggeredAlarms, currentPrice);
-      
+
       // Update storage to remove triggered alarms
       await chrome.storage.local.set({ alarms: remainingAlarms });
-      
+
       console.log(`Triggered ${triggeredAlarms.length} alarm(s)`);
     }
-    
+
   } catch (error) {
     console.error('Error checking alarms:', error);
   }

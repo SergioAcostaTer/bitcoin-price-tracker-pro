@@ -1,66 +1,134 @@
-# Bitcoin Price Extension
+# Bitcoin Price Tracker Pro
 
-**Bitcoin Price** is a Google Chrome extension designed for cryptocurrency enthusiasts who want to monitor Bitcoin's current price in real-time. With its sleek and user-friendly interface, this extension provides up-to-date market data, including:
+<div align="center">
 
-- **Current Price**
-- **Market Cap**
-- **Trading Volume**
+<img src="media/icon.png" alt="Bitcoin Price Tracker Pro" width="120"/>
 
-## Features
+**Professional Bitcoin monitoring for Chrome**
 
-### 📈 Real-Time Chart
-- Track Bitcoin's price movements over various timeframes.
-- Gain insights into market trends with visual data representation.
+[![Chrome Web Store](https://img.shields.io/badge/Chrome-Web%20Store-4285F4?logo=googlechrome&logoColor=white)](https://chromewebstore.google.com/)
+[![MIT License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+[![Version](https://img.shields.io/badge/Version-2.1.0-orange.svg)](manifest.json)
 
-### 🖱️ Easy Access
-- Quickly check Bitcoin's price and chart data by clicking on the extension icon in your browser toolbar.
+</div>
 
-### 🔧 Simple & Customizable
-- Designed for simplicity and ease of use.
-- Tailored to both casual users and experienced cryptocurrency traders.
+## ✨ Features
 
-## Why Bitcoin Price?
+<table>
+<tr>
+<td width="50%">
 
-**Bitcoin Price** is an essential tool for anyone interested in staying informed about Bitcoin's market trends. Whether you're a casual user or a seasoned trader, this extension keeps you connected to the latest market data with just one click.
+### 📊 Real-Time Tracking
+- Live Bitcoin prices in USD/EUR
+- 24-hour price chart with Chart.js
+- Auto-updating badge display
+- Market high/low indicators
+
+### 💼 Portfolio Management
+- Track your Bitcoin holdings
+- Real-time value calculations
+- Multi-currency support
+- Instant portfolio updates
+
+</td>
+<td width="50%">
+
+### 🔔 Smart Alerts
+- Custom price notifications
+- Above/below target alerts
+- Browser notification system
+- Auto-cleanup triggered alerts
+
+### 🎨 Modern Interface
+- Binance-inspired design
+- Dark/light theme toggle
+- Smooth animations
+- Responsive popup layout
+
+</td>
+</tr>
+</table>
+
+## 🚀 Installation
+
+```bash
+# Method 1: Chrome Web Store (Recommended)
+1. Visit Chrome Web Store
+2. Search "Bitcoin Price Tracker Pro"
+3. Click "Add to Chrome"
+
+# Method 2: Developer Mode
+1. Download repository
+2. Open chrome://extensions/
+3. Enable Developer mode
+4. Load unpacked extension
+```
+
+## 📱 Usage
+
+<div align="center">
+
+| Feature | Action | Result |
+|---------|--------|--------|
+| **Price Check** | Click extension icon | View live Bitcoin price |
+| **Currency Switch** | Click USD/EUR button | Toggle between currencies |
+| **Theme Toggle** | Click theme switch | Dark/light mode |
+| **Portfolio** | Edit → Enter amount → Save | Track your holdings |
+| **Alerts** | Add → Set price → Create | Get notifications |
+
+</div>
+
+## 🛠️ Tech Stack
+
+```javascript
+{
+  "manifest": "v3",
+  "frontend": ["HTML5", "CSS3", "JavaScript"],
+  "charts": "Chart.js",
+  "api": "Binance Public API",
+  "storage": "Chrome Storage API",
+  "background": "Service Worker"
+}
+```
+
+## 🎯 Key Highlights
+
+- **⚡ Fast**: Updates every 10 seconds in background
+- **🔒 Secure**: No personal data collection, local storage only
+- **🌐 Reliable**: Official Binance API integration
+- **🎨 Beautiful**: Professional Binance-inspired UI
+- **📱 Optimized**: Lightweight Chrome extension
+
+## 🤝 Contributing
+
+<div align="center">
+
+**Help make Bitcoin Price Tracker Pro even better!**
+
+[![GitHub](https://img.shields.io/badge/GitHub-Repository-black?logo=github)](https://github.com/SergioAcostaTer/BTC-Chrome-Extension)
+
+</div>
+
+1. Fork the repository
+2. Create feature branch
+3. Make your changes
+4. Submit pull request
+
+## 📧 Support
+
+Need help or have suggestions?
+
+**Email**: sergioacostaquintana@gmail.com  
+**GitHub Issues**: [Report a bug](https://github.com/SergioAcostaTer/bitcoin-price-tracker-pro/issues)
+
+## 📜 License
+
+<div align="center">
+
+**MIT License** - Free to use, modify, and distribute
 
 ---
 
-## Installation
+<sub>Made with ❤️ by Acosta | © 2025</sub>
 
-1. Visit the [Chrome Web Store](https://chromewebstore.google.com/detail/bitcoin-price-extension/dmhahbbbnadgmijopggbcjldddgpjkap?authuser=0&hl=es).
-2. Search for **Bitcoin Price Extension**.
-3. Click **Add to Chrome** to install.
-
----
-
-## User Feedback
-
-⭐ **4.1/5** (7 ratings)  
-📊 **1,000+ users**
-
-Join a growing community of cryptocurrency enthusiasts and traders who trust Bitcoin Price to stay up-to-date with Bitcoin's market performance.
-
----
-
-## Screenshots
-
-![Bitcoin Price Logo](https://lh3.googleusercontent.com/bR7ukQesesD86AacrU38h9PMLQZIHlw5oGVHVs0datNhWnYBWp7QZLAz7WY9M7eOhbelUZMmU-Mj-5HpTMGwuo1-=s1280-w1280-h800)
-_A glimpse of the Bitcoin Price Extension in action!_
-
----
-
-## Contributing
-
-We welcome contributions to improve the extension! If you're a developer interested in cryptocurrency, feel free to open an issue or submit a pull request on our [GitHub repository](https://github.com/SergioAcostaTer/BTC-Chrome-Extension).
-
----
-
-## License
-
-This project is licensed under the [MIT License](LICENSE).
-
----
-
-## Contact
-
-For support or feature requests, reach out via [sergioacostaquintana@gmail.com](mailto:sergioacostaquintana@gmail.com)
+</div>
