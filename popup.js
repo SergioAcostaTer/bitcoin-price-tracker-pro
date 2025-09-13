@@ -224,9 +224,8 @@ const updatePriceDisplay = () => {
   const changePercent = state.priceData.changePercent24h;
   const isPositive = changePercent >= 0;
 
-  elements.priceChange.className = `price-change ${
-    isPositive ? "positive" : "negative"
-  }`;
+  elements.priceChange.className = `price-change ${isPositive ? "positive" : "negative"
+    }`;
   elements.priceChange.innerHTML = `
         <span>${isPositive ? "↗" : "↘"}</span>
         <span>${isPositive ? "+" : ""}${changePercent.toFixed(2)}%</span>
@@ -403,16 +402,13 @@ const renderAlarms = () => {
       (alarm) => `
     <div class="alarm-item">
       <div>
-        <div class="alarm-price">${
-          alarm.currency === "usd" ? "$" : "€"
+        <div class="alarm-price">${alarm.currency === "usd" ? "$" : "€"
         }${formatNumber(alarm.price)}</div>
-        <div class="alarm-type">${
-          alarm.type === "above" ? "Above" : "Below"
+        <div class="alarm-type">${alarm.type === "above" ? "Above" : "Below"
         } target</div>
       </div>
-      <button class="alarm-delete" data-id="${
-        alarm.id
-      }" aria-label="Delete alarm">×</button>
+      <button class="alarm-delete" data-id="${alarm.id
+        }" aria-label="Delete alarm">×</button>
     </div>
   `
     )
@@ -562,9 +558,10 @@ const init = async () => {
       clearInterval(chartUpdateInterval);
     });
 
-    // Wake up background script
+    // Wake up background script and test permissions
     try {
       await chrome.runtime.sendMessage({ action: "wakeUp" });
+      await chrome.runtime.sendMessage({ action: 'testPermissions' });
     } catch (error) {
       console.log("Background script communication failed:", error);
     }
