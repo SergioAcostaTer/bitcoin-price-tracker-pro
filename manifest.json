@@ -23,14 +23,16 @@
   },
   "permissions": [
     "alarms",
-    "notifications",
     "storage"
+  ],
+  "optional_permissions": [
+    "notifications"
   ],
   "host_permissions": [
     "https://api.binance.com/api/v3/ticker/24hr*",
     "https://api.binance.com/api/v3/klines*"
   ],
   "content_security_policy": {
-    "extension_pages": "script-src 'self'; object-src 'self'"
+    "extension_pages": "script-src 'self'; object-src 'self'; connect-src 'self' https://api.binance.com"
   }
 }
