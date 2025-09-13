@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "Bitcoin Price Tracker Pro",
   "version": "2.1.0",
-  "description": "Advanced Bitcoin price tracker with real-time alerts, portfolio tracking, and Binance-style interface.",
+  "description": "Track Bitcoin in real time with live alerts, interactive charts, and portfolio management tools.",
   "icons": {
     "16": "media/icon16.png",
     "48": "media/icon48.png",
