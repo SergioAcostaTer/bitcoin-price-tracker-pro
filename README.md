@@ -144,7 +144,7 @@ cd BTC-Chrome-Extension
     "animations": "CSS Transitions + Web Animations API"
   },
   "backend": {
-    "api": "Binance Public API + CoinGecko Fallback",
+    "api": "Binance Public API v3",
     "updates": "WebSocket Real-time + Polling Hybrid",
     "security": "CSP Headers + Input Validation"
   }
