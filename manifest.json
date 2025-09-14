@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Bitcoin Price Tracker Pro",
-  "version": "2.1.1",
+  "version": "2.1.2",
   "description": "Track Bitcoin in real time with live alerts, interactive charts, and portfolio management tools.",
   "icons": {
     "16": "media/icon16.png",
