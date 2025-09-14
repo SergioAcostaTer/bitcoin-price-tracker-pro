@@ -1,9 +1,48 @@
 // Service worker for Chrome extension - Optimized for Chrome Web Store review
 // This background script explicitly demonstrates usage of all requested permissions
 
+// KEEP-ALIVE MECHANISM: Self-ping system to prevent service worker from going dormant
+let keepAliveInterval;
+
+function startKeepAlive() {
+  // Clear any existing interval
+  if (keepAliveInterval) {
+    clearInterval(keepAliveInterval);
+  }
+
+  // Ping ourselves every 20 seconds to stay alive
+  keepAliveInterval = setInterval(async () => {
+    try {
+      // Self-ping using chrome.runtime.sendMessage
+      chrome.runtime.sendMessage({ action: 'keepAlive' }, (response) => {
+        if (chrome.runtime.lastError) {
+          // Ignore errors, this is expected when no listeners
+          console.log('Keep-alive ping sent');
+        }
+      });
+
+      // Also update storage as a keep-alive action
+      await chrome.storage.local.set({
+        lastKeepAlive: Date.now(),
+        keepAliveCount: ((await chrome.storage.local.get('keepAliveCount'))?.keepAliveCount || 0) + 1
+      });
+
+      console.log('Service worker keep-alive ping executed');
+    } catch (error) {
+      console.log('Keep-alive ping error (expected):', error.message);
+    }
+  }, 20000); // 20 seconds interval
+}
+
+// Start keep-alive immediately when service worker loads
+startKeepAlive();
+
 // STORAGE PERMISSION USAGE: Initialize and verify storage access immediately
 chrome.runtime.onInstalled.addListener(async (details) => {
   console.log('Extension installed, initializing storage...');
+
+  // Start keep-alive system on install
+  startKeepAlive();
 
   // Explicitly use storage permission to set default values
   await chrome.storage.local.set({
@@ -11,7 +50,10 @@ chrome.runtime.onInstalled.addListener(async (details) => {
     currency: 'usd',
     portfolioAmount: 0.1,
     alarms: [],
-    lastPriceCheck: Date.now()
+    lastPriceCheck: Date.now(),
+    keepAliveEnabled: true,
+    keepAliveCount: 0,
+    installTime: Date.now()
   });
 
   // NOTIFICATIONS PERMISSION USAGE: Create welcome notification
@@ -35,20 +77,49 @@ chrome.runtime.onInstalled.addListener(async (details) => {
     periodInMinutes: 1
   });
 
+  // Create additional keep-alive alarm as backup
+  chrome.alarms.create('keepAliveAlarm', {
+    delayInMinutes: 0.5,
+    periodInMinutes: 0.5
+  });
+
   // Start initial price refresh
   refreshStart();
 });
 
 // Additional event listeners that trigger permission usage
 chrome.runtime.onStartup.addListener(() => {
-  console.log('Extension startup, verifying alarms...');
-  // ALARMS PERMISSION: Ensure alarm is active on browser startup
+  console.log('Extension startup, verifying alarms and starting keep-alive...');
+
+  // Start keep-alive system on startup
+  startKeepAlive();
+
+  // ALARMS PERMISSION: Ensure alarms are active on browser startup
   chrome.alarms.get('priceCheck', (alarm) => {
     if (!alarm) {
       chrome.alarms.create('priceCheck', { periodInMinutes: 1 });
     }
   });
+
+  chrome.alarms.get('keepAliveAlarm', (alarm) => {
+    if (!alarm) {
+      chrome.alarms.create('keepAliveAlarm', { periodInMinutes: 0.5 });
+    }
+  });
+
   refreshStart();
+});
+
+// KEEP-ALIVE: Handle service worker suspension events
+chrome.runtime.onSuspend.addListener(() => {
+  console.log('Service worker suspending, attempting to stay alive...');
+  // Try to prevent suspension by creating a new alarm
+  chrome.alarms.create('emergencyWakeUp', { delayInMinutes: 0.1 });
+});
+
+chrome.runtime.onSuspendCanceled.addListener(() => {
+  console.log('Service worker suspension canceled, restarting keep-alive...');
+  startKeepAlive();
 });
 
 // Core variables
@@ -58,11 +129,15 @@ let currentPrice = 0;
 let eurPrice = 0;
 const iconUrl = chrome.runtime.getURL('media/icon128.png');
 
-// Message handler - demonstrates storage and notifications usage
+// Message handler - demonstrates storage and notifications usage + keep-alive handling
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   (async () => {
     try {
-      if (request.action === 'createAlarmNotification') {
+      if (request.action === 'keepAlive') {
+        // Handle keep-alive pings
+        console.log('Keep-alive ping received');
+        sendResponse({ status: 'alive', timestamp: Date.now() });
+      } else if (request.action === 'createAlarmNotification') {
         // NOTIFICATIONS PERMISSION: Create price alert notifications
         await createAlarmNotifications(request.alarms, request.currentPrice);
         sendResponse({ status: 'notifications_created' });
@@ -75,6 +150,16 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         // Explicit permission testing endpoint
         await testAllPermissions();
         sendResponse({ status: 'permissions_tested' });
+      } else if (request.action === 'getKeepAliveStatus') {
+        // Return keep-alive statistics
+        const stats = await chrome.storage.local.get(['keepAliveCount', 'lastKeepAlive', 'installTime']);
+        sendResponse({
+          status: 'keep_alive_active',
+          keepAliveCount: stats.keepAliveCount || 0,
+          lastKeepAlive: stats.lastKeepAlive,
+          installTime: stats.installTime,
+          intervalActive: !!keepAliveInterval
+        });
       }
     } catch (err) {
       console.error('onMessage error:', err);
@@ -226,6 +311,21 @@ chrome.alarms.onAlarm.addListener(async (alarm) => {
     await chrome.storage.local.set({
       alarmExecutions: (alarmLog.alarmExecutions || 0) + 1
     });
+  } else if (alarm.name === 'keepAliveAlarm') {
+    console.log('Keep-alive alarm triggered');
+    // STORAGE PERMISSION: Log keep-alive alarm execution
+    await chrome.storage.local.set({
+      lastKeepAliveAlarm: Date.now()
+    });
+    // Restart interval-based keep-alive if needed
+    if (!keepAliveInterval) {
+      startKeepAlive();
+    }
+  } else if (alarm.name === 'emergencyWakeUp') {
+    console.log('Emergency wake-up alarm triggered');
+    startKeepAlive();
+    // Clean up the emergency alarm
+    chrome.alarms.clear('emergencyWakeUp');
   }
 });
 
@@ -286,13 +386,16 @@ function setLoading(isLoading) {
 
 function refreshStart() {
   refresh();
-  // ALARMS PERMISSION: Ensure alarm is created
+  // ALARMS PERMISSION: Ensure alarms are created
   chrome.alarms.create('priceCheck', { periodInMinutes: 1 });
+  chrome.alarms.create('keepAliveAlarm', { periodInMinutes: 0.5 });
 }
 
-// Clear existing alarms on startup and create new one
-chrome.alarms.clear('priceCheck', () => {
+// Clear existing alarms on startup and create new ones
+chrome.alarms.clearAll(() => {
   refreshStart();
+  // Ensure keep-alive starts after clearing alarms
+  startKeepAlive();
 });
 
 // Initialize on startup with explicit permission usage demonstration
