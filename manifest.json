@@ -23,9 +23,7 @@
   },
   "permissions": [
     "alarms",
-    "storage"
-  ],
-  "optional_permissions": [
+    "storage",
     "notifications"
   ],
   "host_permissions": [
