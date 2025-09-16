@@ -1,5 +1,5 @@
-// Service worker for Chrome extension - Optimized for Chrome Web Store review
-// This background script explicitly demonstrates usage of all requested permissions
+// Service worker for Chrome extension - Optimized with Binance WebSocket
+// This background script uses WebSocket for real-time Bitcoin price updates
 
 // KEEP-ALIVE MECHANISM: Self-ping system to prevent service worker from going dormant
 let keepAliveInterval;
@@ -37,6 +37,39 @@ function startKeepAlive() {
 // Start keep-alive immediately when service worker loads
 startKeepAlive();
 
+// Core variables
+let cache = "0";
+let loading = false;
+let currentPrice = 0;
+let eurPrice = 0;
+const iconUrl = chrome.runtime.getURL('media/icon128.png');
+
+// WebSocket variables
+let btcWebSocket = null;
+let eurWebSocket = null;
+let wsReconnectTimeout = null;
+let wsReconnectAttempts = 0;
+const MAX_RECONNECT_ATTEMPTS = 5;
+const RECONNECT_DELAY = 5000;
+
+// Price data storage
+let priceData = {
+  btcusd: {
+    lastPrice: 0,
+    highPrice: 0,
+    lowPrice: 0,
+    priceChange: 0,
+    priceChangePercent: 0
+  },
+  btceur: {
+    lastPrice: 0,
+    highPrice: 0,
+    lowPrice: 0,
+    priceChange: 0,
+    priceChangePercent: 0
+  }
+};
+
 // STORAGE PERMISSION USAGE: Initialize and verify storage access immediately
 chrome.runtime.onInstalled.addListener(async (details) => {
   console.log('Extension installed, initializing storage...');
@@ -53,7 +86,8 @@ chrome.runtime.onInstalled.addListener(async (details) => {
     lastPriceCheck: Date.now(),
     keepAliveEnabled: true,
     keepAliveCount: 0,
-    installTime: Date.now()
+    installTime: Date.now(),
+    wsConnected: false
   });
 
   // NOTIFICATIONS PERMISSION USAGE: Create welcome notification
@@ -62,7 +96,7 @@ chrome.runtime.onInstalled.addListener(async (details) => {
       type: 'basic',
       iconUrl: chrome.runtime.getURL('media/icon128.png'),
       title: 'Bitcoin Price Tracker Pro',
-      message: 'Extension installed successfully! Price tracking is now active.',
+      message: 'Extension installed successfully! Real-time price tracking is now active.',
       priority: 1
     });
     // Clear welcome notification after 5 seconds
@@ -71,10 +105,10 @@ chrome.runtime.onInstalled.addListener(async (details) => {
     console.error('Notification creation failed:', error);
   }
 
-  // ALARMS PERMISSION USAGE: Create recurring price check alarm
-  chrome.alarms.create('priceCheck', {
+  // ALARMS PERMISSION USAGE: Create recurring alarm for connection monitoring
+  chrome.alarms.create('wsHealthCheck', {
     delayInMinutes: 1,
-    periodInMinutes: 1
+    periodInMinutes: 2
   });
 
   // Create additional keep-alive alarm as backup
@@ -83,21 +117,21 @@ chrome.runtime.onInstalled.addListener(async (details) => {
     periodInMinutes: 0.5
   });
 
-  // Start initial price refresh
-  refreshStart();
+  // Start WebSocket connections
+  initializeWebSockets();
 });
 
 // Additional event listeners that trigger permission usage
 chrome.runtime.onStartup.addListener(() => {
-  console.log('Extension startup, verifying alarms and starting keep-alive...');
+  console.log('Extension startup, starting WebSocket connections...');
 
   // Start keep-alive system on startup
   startKeepAlive();
 
   // ALARMS PERMISSION: Ensure alarms are active on browser startup
-  chrome.alarms.get('priceCheck', (alarm) => {
+  chrome.alarms.get('wsHealthCheck', (alarm) => {
     if (!alarm) {
-      chrome.alarms.create('priceCheck', { periodInMinutes: 1 });
+      chrome.alarms.create('wsHealthCheck', { periodInMinutes: 2 });
     }
   });
 
@@ -107,27 +141,198 @@ chrome.runtime.onStartup.addListener(() => {
     }
   });
 
-  refreshStart();
+  // Initialize WebSocket connections
+  initializeWebSockets();
 });
 
 // KEEP-ALIVE: Handle service worker suspension events
 chrome.runtime.onSuspend.addListener(() => {
-  console.log('Service worker suspending, attempting to stay alive...');
+  console.log('Service worker suspending, closing WebSocket connections...');
+  closeWebSockets();
   // Try to prevent suspension by creating a new alarm
   chrome.alarms.create('emergencyWakeUp', { delayInMinutes: 0.1 });
 });
 
 chrome.runtime.onSuspendCanceled.addListener(() => {
-  console.log('Service worker suspension canceled, restarting keep-alive...');
+  console.log('Service worker suspension canceled, restarting connections...');
   startKeepAlive();
+  initializeWebSockets();
 });
 
-// Core variables
-let cache = "0";
-let loading = false;
-let currentPrice = 0;
-let eurPrice = 0;
-const iconUrl = chrome.runtime.getURL('media/icon128.png');
+// WebSocket initialization and management
+function initializeWebSockets() {
+  console.log('Initializing WebSocket connections...');
+  
+  // Close existing connections
+  closeWebSockets();
+  
+  // Connect to BTC/USDT stream
+  connectBTCWebSocket();
+  
+  // Connect to BTC/EUR stream
+  connectEURWebSocket();
+}
+
+function connectBTCWebSocket() {
+  try {
+    btcWebSocket = new WebSocket('wss://stream.binance.com:9443/ws/btcusdt@ticker');
+    
+    btcWebSocket.onopen = () => {
+      console.log('BTC/USDT WebSocket connected');
+      wsReconnectAttempts = 0;
+      updateConnectionStatus(true);
+    };
+    
+    btcWebSocket.onmessage = (event) => {
+      try {
+        const data = JSON.parse(event.data);
+        
+        // Update BTC/USD price data
+        priceData.btcusd = {
+          lastPrice: parseFloat(data.c),
+          highPrice: parseFloat(data.h),
+          lowPrice: parseFloat(data.l),
+          priceChange: parseFloat(data.P),
+          priceChangePercent: parseFloat(data.P)
+        };
+        
+        currentPrice = priceData.btcusd.lastPrice;
+        
+        // Update UI
+        updateBadgeAndTitle();
+        
+        // Check alarms
+        checkStoredAlarms();
+        
+        // Save to storage
+        saveCurrentPrices();
+        
+      } catch (error) {
+        console.error('Error processing BTC WebSocket message:', error);
+      }
+    };
+    
+    btcWebSocket.onerror = (error) => {
+      console.error('BTC WebSocket error:', error);
+      updateConnectionStatus(false);
+    };
+    
+    btcWebSocket.onclose = (event) => {
+      console.log('BTC WebSocket closed:', event.code, event.reason);
+      updateConnectionStatus(false);
+      
+      // Attempt reconnection
+      if (wsReconnectAttempts < MAX_RECONNECT_ATTEMPTS) {
+        wsReconnectAttempts++;
+        console.log(`Attempting BTC WebSocket reconnection (${wsReconnectAttempts}/${MAX_RECONNECT_ATTEMPTS})`);
+        
+        wsReconnectTimeout = setTimeout(() => {
+          connectBTCWebSocket();
+        }, RECONNECT_DELAY);
+      }
+    };
+    
+  } catch (error) {
+    console.error('Failed to create BTC WebSocket:', error);
+  }
+}
+
+function connectEURWebSocket() {
+  try {
+    eurWebSocket = new WebSocket('wss://stream.binance.com:9443/ws/btceur@ticker');
+    
+    eurWebSocket.onopen = () => {
+      console.log('BTC/EUR WebSocket connected');
+    };
+    
+    eurWebSocket.onmessage = (event) => {
+      try {
+        const data = JSON.parse(event.data);
+        
+        // Update BTC/EUR price data
+        priceData.btceur = {
+          lastPrice: parseFloat(data.c),
+          highPrice: parseFloat(data.h),
+          lowPrice: parseFloat(data.l),
+          priceChange: parseFloat(data.P),
+          priceChangePercent: parseFloat(data.P)
+        };
+        
+        eurPrice = priceData.btceur.lastPrice;
+        
+        // Save to storage
+        saveCurrentPrices();
+        
+      } catch (error) {
+        console.error('Error processing EUR WebSocket message:', error);
+      }
+    };
+    
+    eurWebSocket.onerror = (error) => {
+      console.error('EUR WebSocket error:', error);
+    };
+    
+    eurWebSocket.onclose = (event) => {
+      console.log('EUR WebSocket closed:', event.code, event.reason);
+      
+      // Attempt reconnection
+      if (wsReconnectAttempts < MAX_RECONNECT_ATTEMPTS) {
+        setTimeout(() => {
+          connectEURWebSocket();
+        }, RECONNECT_DELAY);
+      }
+    };
+    
+  } catch (error) {
+    console.error('Failed to create EUR WebSocket:', error);
+  }
+}
+
+function closeWebSockets() {
+  if (btcWebSocket) {
+    btcWebSocket.close();
+    btcWebSocket = null;
+  }
+  
+  if (eurWebSocket) {
+    eurWebSocket.close();
+    eurWebSocket = null;
+  }
+  
+  if (wsReconnectTimeout) {
+    clearTimeout(wsReconnectTimeout);
+    wsReconnectTimeout = null;
+  }
+  
+  updateConnectionStatus(false);
+}
+
+// STORAGE PERMISSION: Update connection status
+async function updateConnectionStatus(connected) {
+  try {
+    await chrome.storage.local.set({
+      wsConnected: connected,
+      lastConnection: Date.now()
+    });
+  } catch (error) {
+    console.error('Failed to update connection status:', error);
+  }
+}
+
+// STORAGE PERMISSION: Save current prices
+async function saveCurrentPrices() {
+  try {
+    await chrome.storage.local.set({
+      currentPrice: currentPrice,
+      eurPrice: eurPrice,
+      priceData: priceData,
+      lastUpdate: new Date().toISOString(),
+      lastPriceCheck: Date.now()
+    });
+  } catch (error) {
+    console.error('Failed to save prices:', error);
+  }
+}
 
 // Message handler - demonstrates storage and notifications usage + keep-alive handling
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
@@ -142,24 +347,39 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         await createAlarmNotifications(request.alarms, request.currentPrice);
         sendResponse({ status: 'notifications_created' });
       } else if (request.action === 'wakeUp') {
-        await refresh();
-        sendResponse({ status: 'awake' });
+        // Ensure WebSocket connections are active
+        if (!btcWebSocket || btcWebSocket.readyState !== WebSocket.OPEN) {
+          initializeWebSockets();
+        }
+        sendResponse({ status: 'awake', wsConnected: btcWebSocket?.readyState === WebSocket.OPEN });
       } else if (request.action === 'getPriceData') {
-        sendResponse({ currentPrice, eurPrice });
+        sendResponse({ 
+          currentPrice, 
+          eurPrice, 
+          priceData,
+          wsConnected: btcWebSocket?.readyState === WebSocket.OPEN
+        });
       } else if (request.action === 'testPermissions') {
         // Explicit permission testing endpoint
         await testAllPermissions();
         sendResponse({ status: 'permissions_tested' });
       } else if (request.action === 'getKeepAliveStatus') {
-        // Return keep-alive statistics
-        const stats = await chrome.storage.local.get(['keepAliveCount', 'lastKeepAlive', 'installTime']);
+        // Return keep-alive and WebSocket statistics
+        const stats = await chrome.storage.local.get(['keepAliveCount', 'lastKeepAlive', 'installTime', 'wsConnected']);
         sendResponse({
           status: 'keep_alive_active',
           keepAliveCount: stats.keepAliveCount || 0,
           lastKeepAlive: stats.lastKeepAlive,
           installTime: stats.installTime,
-          intervalActive: !!keepAliveInterval
+          intervalActive: !!keepAliveInterval,
+          wsConnected: stats.wsConnected || false,
+          btcWsState: btcWebSocket?.readyState,
+          eurWsState: eurWebSocket?.readyState
         });
+      } else if (request.action === 'restartWebSockets') {
+        // Manual WebSocket restart
+        initializeWebSockets();
+        sendResponse({ status: 'websockets_restarted' });
       }
     } catch (err) {
       console.error('onMessage error:', err);
@@ -195,40 +415,6 @@ async function testAllPermissions() {
     console.log('All permissions tested successfully');
   } catch (error) {
     console.error('Permission test failed:', error);
-  }
-}
-
-// Main refresh function with explicit storage usage
-async function refresh() {
-  try {
-    setLoading(true);
-
-    // STORAGE PERMISSION: Update last check time
-    await chrome.storage.local.set({ lastPriceCheck: Date.now() });
-
-    const res = await fetch("https://api.binance.com/api/v3/ticker/24hr?symbols=%5B%22BTCUSDT%22,%22BTCEUR%22%5D");
-    const data = await res.json();
-
-    // Update global price variables
-    currentPrice = parseFloat(data[0].lastPrice);
-    eurPrice = parseFloat(data[1].lastPrice);
-
-    updateBadgeAndTitle(data);
-
-    // STORAGE PERMISSION: Save current prices to storage
-    await chrome.storage.local.set({
-      currentPrice: currentPrice,
-      eurPrice: eurPrice,
-      lastUpdate: new Date().toISOString()
-    });
-
-    // Check alarms whenever price updates
-    await checkStoredAlarms();
-
-  } catch (error) {
-    console.error('Failed to fetch data:', error);
-  } finally {
-    setLoading(false);
   }
 }
 
@@ -302,14 +488,23 @@ chrome.notifications.onClicked.addListener((notificationId) => {
 
 // ALARMS PERMISSION USAGE: Handle Chrome alarms
 chrome.alarms.onAlarm.addListener(async (alarm) => {
-  if (alarm.name === 'priceCheck') {
-    console.log('Alarm triggered: priceCheck');
-    await refresh();
+  if (alarm.name === 'wsHealthCheck') {
+    console.log('WebSocket health check triggered');
+    
+    // Check if WebSocket connections are healthy
+    const btcHealthy = btcWebSocket && btcWebSocket.readyState === WebSocket.OPEN;
+    const eurHealthy = eurWebSocket && eurWebSocket.readyState === WebSocket.OPEN;
+    
+    if (!btcHealthy || !eurHealthy) {
+      console.log('WebSocket connections unhealthy, reconnecting...');
+      initializeWebSockets();
+    }
 
-    // STORAGE PERMISSION: Log alarm execution
-    const alarmLog = await chrome.storage.local.get('alarmExecutions') || { alarmExecutions: 0 };
+    // STORAGE PERMISSION: Log health check
+    const healthLog = await chrome.storage.local.get('healthCheckExecutions') || { healthCheckExecutions: 0 };
     await chrome.storage.local.set({
-      alarmExecutions: (alarmLog.alarmExecutions || 0) + 1
+      healthCheckExecutions: (healthLog.healthCheckExecutions || 0) + 1,
+      lastHealthCheck: Date.now()
     });
   } else if (alarm.name === 'keepAliveAlarm') {
     console.log('Keep-alive alarm triggered');
@@ -324,30 +519,30 @@ chrome.alarms.onAlarm.addListener(async (alarm) => {
   } else if (alarm.name === 'emergencyWakeUp') {
     console.log('Emergency wake-up alarm triggered');
     startKeepAlive();
+    initializeWebSockets();
     // Clean up the emergency alarm
     chrome.alarms.clear('emergencyWakeUp');
   }
 });
 
-function updateBadgeAndTitle(data) {
-  const price = parseFloat(data[0].lastPrice);
-  const eurPriceVal = parseFloat(data[1].lastPrice);
+function updateBadgeAndTitle() {
+  if (!currentPrice || !eurPrice) return;
 
-  const usdPriceFormatted = formatPrice(price);
-  const eurPriceFormatted = formatPrice(eurPriceVal);
+  const usdPriceFormatted = formatPrice(currentPrice);
+  const eurPriceFormatted = formatPrice(eurPrice);
 
-  const badgeText = formatBadgePrice(price);
+  const badgeText = formatBadgePrice(currentPrice);
   updateBadge(badgeText);
   cache = badgeText;
 
-  const minToday = formatPrice(parseFloat(data[0].lowPrice));
-  const athToday = formatPrice(parseFloat(data[0].highPrice));
+  const minToday = formatPrice(priceData.btcusd.lowPrice);
+  const athToday = formatPrice(priceData.btcusd.highPrice);
 
   chrome.action.setTitle({
-    title: `Bitcoin Price \nUSD: ${usdPriceFormatted}$ \nEUR: ${eurPriceFormatted}€\nHigh 24h: ${athToday}$\nLow 24h: ${minToday}$ \n\nLast updated: ${new Date().toLocaleTimeString()}`,
+    title: `Bitcoin Price (Real-time)\nUSD: ${usdPriceFormatted}$ \nEUR: ${eurPriceFormatted}€\nHigh 24h: ${athToday}$\nLow 24h: ${minToday}$ \n\nLast updated: ${new Date().toLocaleTimeString()}`,
   });
 
-  console.log(`Price updated: USD: ${usdPriceFormatted}$ EUR: ${eurPriceFormatted}€`);
+  console.log(`Price updated (WebSocket): USD: ${usdPriceFormatted}$ EUR: ${eurPriceFormatted}€`);
 }
 
 function updateBadge(text) {
@@ -384,19 +579,15 @@ function setLoading(isLoading) {
   loading = isLoading;
 }
 
-function refreshStart() {
-  refresh();
-  // ALARMS PERMISSION: Ensure alarms are created
-  chrome.alarms.create('priceCheck', { periodInMinutes: 1 });
-  chrome.alarms.create('keepAliveAlarm', { periodInMinutes: 0.5 });
-}
-
 // Clear existing alarms on startup and create new ones
 chrome.alarms.clearAll(() => {
-  refreshStart();
+  // ALARMS PERMISSION: Ensure health check alarm is created
+  chrome.alarms.create('wsHealthCheck', { periodInMinutes: 2 });
+  chrome.alarms.create('keepAliveAlarm', { periodInMinutes: 0.5 });
+  
   // Ensure keep-alive starts after clearing alarms
   startKeepAlive();
+  
+  // Initialize WebSocket connections
+  initializeWebSockets();
 });
-
-// Initialize on startup with explicit permission usage demonstration
-refresh();

@@ -12,6 +12,7 @@ let state = {
     change24h: 0,
     changePercent24h: 0,
   },
+  wsConnected: false,
 };
 
 // DOM elements
@@ -28,6 +29,7 @@ const elements = {
   editPortfolio: document.getElementById("edit-portfolio"),
   addAlarm: document.getElementById("add-alarm"),
   alarmsListContainer: document.getElementById("alarms-list"),
+  connectionStatus: document.getElementById("connection-status"),
 
   // Modals
   portfolioModal: document.getElementById("portfolio-modal"),
@@ -69,12 +71,30 @@ const loadState = async () => {
       "currency",
       "portfolioAmount",
       "alarms",
+      "currentPrice",
+      "eurPrice",
+      "priceData",
+      "wsConnected"
     ]);
 
     state.theme = result.theme || "dark";
     state.currency = result.currency || "usd";
     state.portfolioAmount = result.portfolioAmount || 0.1;
     state.alarms = result.alarms || [];
+    state.currentPrice = result.currentPrice || 0;
+    state.eurPrice = result.eurPrice || 0;
+    state.wsConnected = result.wsConnected || false;
+    
+    if (result.priceData) {
+      // Map WebSocket price data structure to popup format
+      const btcData = result.priceData.btcusd || {};
+      state.priceData = {
+        high24h: btcData.highPrice || 0,
+        low24h: btcData.lowPrice || 0,
+        change24h: btcData.priceChange || 0,
+        changePercent24h: btcData.priceChangePercent || 0,
+      };
+    }
   } catch (error) {
     console.error("Failed to load state:", error);
   }
@@ -143,9 +163,68 @@ const toggleCurrency = async () => {
   await saveState();
 };
 
-// Price data fetching
-const fetchPriceData = async () => {
+// Connection status indicator
+const updateConnectionStatus = () => {
+  if (elements.connectionStatus) {
+    if (state.wsConnected) {
+      elements.connectionStatus.textContent = "🟢 Live";
+      elements.connectionStatus.title = "Real-time WebSocket connection active";
+      elements.connectionStatus.className = "connection-status connected";
+    } else {
+      elements.connectionStatus.textContent = "🔴 Offline";
+      elements.connectionStatus.title = "WebSocket connection lost - attempting to reconnect";
+      elements.connectionStatus.className = "connection-status disconnected";
+    }
+  }
+};
+
+// Get real-time data from background script
+const fetchPriceDataFromBackground = async () => {
   try {
+    const response = await chrome.runtime.sendMessage({ action: "getPriceData" });
+    
+    if (response && !response.error) {
+      state.currentPrice = response.currentPrice || 0;
+      state.eurPrice = response.eurPrice || 0;
+      state.wsConnected = response.wsConnected || false;
+      
+      if (response.priceData) {
+        const btcData = response.priceData.btcusd || {};
+        state.priceData = {
+          high24h: btcData.highPrice || 0,
+          low24h: btcData.lowPrice || 0,
+          change24h: btcData.priceChange || 0,
+          changePercent24h: btcData.priceChangePercent || 0,
+        };
+      }
+
+      updatePriceDisplay();
+      updatePortfolioDisplay();
+      updateConnectionStatus();
+      checkAlarms();
+      
+      // Save updated state
+      await storage.set({
+        currentPrice: state.currentPrice,
+        eurPrice: state.eurPrice,
+        priceData: response.priceData,
+        wsConnected: state.wsConnected
+      });
+    }
+  } catch (error) {
+    console.error("Failed to fetch price data from background:", error);
+    state.wsConnected = false;
+    updateConnectionStatus();
+    
+    // Fallback to REST API if WebSocket fails
+    await fetchPriceDataFromAPI();
+  }
+};
+
+// Fallback REST API data fetching
+const fetchPriceDataFromAPI = async () => {
+  try {
+    console.log("Fetching price data from REST API as fallback...");
     const response = await fetch(
       "https://api.binance.com/api/v3/ticker/24hr?symbols=%5B%22BTCUSDT%22,%22BTCEUR%22%5D"
     );
@@ -171,12 +250,12 @@ const fetchPriceData = async () => {
       }
     }
   } catch (error) {
-    console.error("Failed to fetch price data:", error);
+    console.error("Failed to fetch price data from API:", error);
     elements.priceValue.textContent = "Error loading price";
   }
 };
 
-// Chart data fetching and rendering
+// Chart data fetching for historical data (still uses REST API)
 const fetchChartData = async () => {
   try {
     const response = await fetch(
@@ -352,9 +431,10 @@ const checkAlarms = () => {
   if (!state.currentPrice || state.alarms.length === 0) return;
 
   const triggeredAlarms = state.alarms.filter((alarm) => {
+    const priceToCheck = alarm.currency === "usd" ? state.currentPrice : state.eurPrice;
     return alarm.type === "above"
-      ? state.currentPrice >= alarm.price
-      : state.currentPrice <= alarm.price;
+      ? priceToCheck >= alarm.price
+      : priceToCheck <= alarm.price;
   });
 
   if (triggeredAlarms.length > 0) {
@@ -470,6 +550,22 @@ const saveAlarmModal = async () => {
   }
 };
 
+// WebSocket connection management
+const restartWebSockets = async () => {
+  try {
+    const response = await chrome.runtime.sendMessage({ action: "restartWebSockets" });
+    if (response && response.status === "websockets_restarted") {
+      console.log("WebSocket connections restarted");
+      // Update connection status after a short delay
+      setTimeout(async () => {
+        await fetchPriceDataFromBackground();
+      }, 1000);
+    }
+  } catch (error) {
+    console.error("Failed to restart WebSocket connections:", error);
+  }
+};
+
 // Event listeners
 const setupEventListeners = () => {
   // Theme toggle
@@ -514,6 +610,12 @@ const setupEventListeners = () => {
     if (e.key === "Enter") saveAlarmModal();
   });
 
+  // Connection status click to restart WebSocket
+  if (elements.connectionStatus) {
+    elements.connectionStatus.addEventListener("click", restartWebSockets);
+    elements.connectionStatus.style.cursor = "pointer";
+  }
+
   // Click outside modal to close
   elements.portfolioModal.addEventListener("click", (e) => {
     if (e.target === elements.portfolioModal)
@@ -524,6 +626,45 @@ const setupEventListeners = () => {
     if (e.target === elements.alarmModal) hideModal(elements.alarmModal);
   });
 };
+
+// Real-time data update using storage changes listener
+chrome.storage.onChanged.addListener((changes, namespace) => {
+  if (namespace === 'local') {
+    let shouldUpdate = false;
+    
+    if (changes.currentPrice) {
+      state.currentPrice = changes.currentPrice.newValue;
+      shouldUpdate = true;
+    }
+    
+    if (changes.eurPrice) {
+      state.eurPrice = changes.eurPrice.newValue;
+      shouldUpdate = true;
+    }
+    
+    if (changes.priceData) {
+      const btcData = changes.priceData.newValue?.btcusd || {};
+      state.priceData = {
+        high24h: btcData.highPrice || 0,
+        low24h: btcData.lowPrice || 0,
+        change24h: btcData.priceChange || 0,
+        changePercent24h: btcData.priceChangePercent || 0,
+      };
+      shouldUpdate = true;
+    }
+    
+    if (changes.wsConnected) {
+      state.wsConnected = changes.wsConnected.newValue;
+      updateConnectionStatus();
+    }
+    
+    if (shouldUpdate) {
+      updatePriceDisplay();
+      updatePortfolioDisplay();
+      checkAlarms();
+    }
+  }
+});
 
 // Global functions for onclick handlers
 window.removeAlarm = removeAlarm;
@@ -544,18 +685,27 @@ const init = async () => {
     // Render initial alarms
     renderAlarms();
 
-    // Fetch initial data
-    await fetchPriceData();
+    // Update connection status
+    updateConnectionStatus();
+
+    // Fetch initial data from background script (WebSocket data)
+    await fetchPriceDataFromBackground();
+
+    // Fetch chart data (still uses REST API for historical data)
     await fetchChartData();
 
-    // Setup periodic updates (only while popup is open)
-    const priceUpdateInterval = setInterval(fetchPriceData, 5000);
-    const chartUpdateInterval = setInterval(fetchChartData, 60000);
+    // Setup periodic updates for chart data only (live prices come via WebSocket)
+    const chartUpdateInterval = setInterval(fetchChartData, 300000); // Update chart every 5 minutes
+
+    // Setup periodic connection check
+    const connectionCheckInterval = setInterval(async () => {
+      await fetchPriceDataFromBackground();
+    }, 10000); // Check connection every 10 seconds
 
     // Clean up intervals when popup closes
     window.addEventListener("beforeunload", () => {
-      clearInterval(priceUpdateInterval);
       clearInterval(chartUpdateInterval);
+      clearInterval(connectionCheckInterval);
     });
 
     // Wake up background script and test permissions
