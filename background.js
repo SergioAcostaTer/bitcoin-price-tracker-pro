@@ -183,14 +183,14 @@ async function testAllPermissions() {
     });
 
     // Test NOTIFICATIONS permission
-    await chrome.notifications.create('permissionTest', {
-      type: 'basic',
-      iconUrl: iconUrl,
-      title: 'Permission Test',
-      message: 'All permissions are working correctly!',
-      priority: 0
-    });
-    setTimeout(() => chrome.notifications.clear('permissionTest'), 3000);
+    // await chrome.notifications.create('permissionTest', {
+    //   type: 'basic',
+    //   iconUrl: iconUrl,
+    //   title: 'Permission Test',
+    //   message: 'All permissions are working correctly!',
+    //   priority: 0
+    // });
+    // setTimeout(() => chrome.notifications.clear('permissionTest'), 3000);
 
     console.log('All permissions tested successfully');
   } catch (error) {
